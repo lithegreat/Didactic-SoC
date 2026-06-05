@@ -51,7 +51,20 @@ module tum_ss(
   assign pmod_gpo     = 'h0;
   assign pmod_gpio_oe = 'h0;
 
-  accelerator_top i_accelerator_top (
+  // Physical systolic-array dimension (M = N = K). Override at synthesis time
+  // with +define+ACCEL_DIM=8 (e.g. `ACCEL_DIM=8 make all_xilinx`) to fit smaller
+  // FPGAs such as the PYNQ-Z1; defaults to 16 to match the standalone testbench
+  // and the Python golden model. Runtime matrix dims written via the APB regmap
+  // must stay <= this physical size.
+`ifndef ACCEL_DIM
+  `define ACCEL_DIM 16
+`endif
+
+  accelerator_top #(
+    .M (`ACCEL_DIM),
+    .N (`ACCEL_DIM),
+    .K (`ACCEL_DIM)
+  ) i_accelerator_top (
     // Clock / reset
     .clk_in    (clk_in),
     .reset_int (~reset_int),    // SoC reset_int is active-low; accel wants active-high

@@ -13,6 +13,11 @@ TEST ?= blink
 export BUILD_DIR ?= ../build
 export PROJECT ?= z1
 
+# Physical systolic-array dimension (M=N=K) compiled into the bitstream.
+# 16 saturates the PYNQ-Z1 (DSP/LUT > 100%); use 8 to fit. Override e.g.:
+#   make all_xilinx ACCEL_DIM=8
+export ACCEL_DIM ?= 16
+
 check_env:
 	mkdir -p $(BUILD_DIR)
 

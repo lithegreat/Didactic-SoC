@@ -96,3 +96,12 @@ fpga: check-env
 .PHONY: verilate
 verilate:
 	@python3 ./verification/verilator/verilate.py
+
+# Full-SoC, bus-driven accelerator functional test (license-free, Verilator).
+# Boots the Ibex core on sw/accel/accel.c and drives the systolic-array
+# accelerator through the real OBI/APB fabric. Requires the prebuilt program
+# image verification/verilator/accel.hex (see build_test TESTCASE=accel).
+.PHONY: verilate_accel
+verilate_accel:
+	@python3 ./verification/verilator/verilate_soc_accel.py
+

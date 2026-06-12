@@ -55,9 +55,13 @@ VOPT_OPTS = \
 # In 4-state QuestaSim, un-reset Ibex prefetch/fetch flops power up as X and
 # that X propagates into the fetched opcode ("Illegal instruction ... 0xX0XXX7XX")
 # even though imem holds the correct instruction. +initreg/+initmem force 0,
-# matching real hardware and the 2-state Verilator flow. Override INIT_OPTS= to
-# restore pure 4-state X behaviour.
-INIT_OPTS ?= +initreg+0 +initmem+0
+# matching real hardware and the 2-state Verilator flow.
+#
+# Left OFF by default: with this SoC, "+initreg+0 +initmem+0" does NOT clear the
+# fetch-path X and instead trips a storm of Ibex ASSERT_KNOWN X-checks that
+# aborts vsim. Opt in (and tune the spec) explicitly when experimenting, e.g.
+#   make elaborate INIT_OPTS="+initreg+0 +initmem+0"
+INIT_OPTS ?=
 
 # vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = \

@@ -24,9 +24,16 @@ TB_DEFINES = \
 # * RVFi required by tracer
 # * Synthesis disables verification assertions within
 # pulp / ibex codes
+# * COMMON_CELLS_ASSERTS_OFF silences the common_cells rr_arb_tree OBI-arbiter
+#   assertions. Ibex legitimately retracts OBI requests before grant, which
+#   trips the LockIn "lock_req" ASSUME every cycle during normal memory traffic
+#   (millions of hits -> multi-GB logs). The Verilator flow disables them the
+#   same way; functional correctness is checked by the program's own result
+#   comparison, not these library protocol assumes.
 DUT_DEFINES = \
 	+define+RVFI \
 	+define+INC_ASSERT \
+	+define+COMMON_CELLS_ASSERTS_OFF \
 #	+define+SYNTHESIS \
 
 DUT_LIBS = \
@@ -42,6 +49,15 @@ VOPT_OPTS = \
 	-sv \
 	-suppress vopt-2577 \
 	+acc=npr \
+	$(INIT_OPTS) \
+
+# Deterministic 0-initialisation of all flops and memories at elaboration.
+# In 4-state QuestaSim, un-reset Ibex prefetch/fetch flops power up as X and
+# that X propagates into the fetched opcode ("Illegal instruction ... 0xX0XXX7XX")
+# even though imem holds the correct instruction. +initreg/+initmem force 0,
+# matching real hardware and the 2-state Verilator flow. Override INIT_OPTS= to
+# restore pure 4-state X behaviour.
+INIT_OPTS ?= +initreg+0 +initmem+0
 
 # vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = \
@@ -93,6 +109,10 @@ compile_didactic:
 SANITY_CHECK ?= 0
 TESTCASE ?= blink
 GUI ?= "-c"
+# vsim -do command. Default keeps the GUI-friendly behaviour (advance 0 ms, then
+# wait for interactive commands). For headless/batch runs pass a self-finishing
+# script, e.g.  make run_sim RUN_CMD="run -all; quit -f".
+RUN_CMD ?= run 0ms;
 elaborate: library_mapping
 	cd $(BUILD_DIR)
 	vopt \
@@ -111,5 +131,5 @@ run_sim: library_mapping
 	$(DUT_LIBS) $(VSIM_OPTS) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \
-	-do "run 0ms;" \
+	-do "$(RUN_CMD)" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log

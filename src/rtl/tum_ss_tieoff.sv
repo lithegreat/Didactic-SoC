@@ -60,10 +60,19 @@ module tum_ss(
   `define ACCEL_DIM 16
 `endif
 
+  // Element bit-width. INT8 is the baseline (matches the Python golden
+  // generator and the regenerated accel_gemm_data.h). Override at compile time
+  // with +define+ACCEL_DATA_W=16 (Verilator: -DACCEL_DATA_W=16) for a wider
+  // datapath; the firmware test header must be regenerated to match.
+`ifndef ACCEL_DATA_W
+  `define ACCEL_DATA_W 8
+`endif
+
   accelerator_top #(
-    .M (`ACCEL_DIM),
-    .N (`ACCEL_DIM),
-    .K (`ACCEL_DIM)
+    .DATA_W (`ACCEL_DATA_W),
+    .M      (`ACCEL_DIM),
+    .N      (`ACCEL_DIM),
+    .K      (`ACCEL_DIM)
   ) i_accelerator_top (
     // Clock / reset
     .clk_in    (clk_in),

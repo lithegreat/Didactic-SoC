@@ -51,13 +51,18 @@ VOPT_OPTS = \
 	+acc=npr \
 	$(INIT_OPTS) \
 
-# Deterministic 0-initialisation of all flops and memories at elaboration.
-# In 4-state QuestaSim, un-reset Ibex prefetch/fetch flops power up as X and
-# that X propagates into the fetched opcode ("Illegal instruction ... 0xX0XXX7XX")
-# even though imem holds the correct instruction. +initreg/+initmem force 0,
-# matching real hardware and the 2-state Verilator flow. Override INIT_OPTS= to
-# restore pure 4-state X behaviour.
-INIT_OPTS ?= +initreg+0 +initmem+0
+# Deterministic 0-initialisation of unreset flip-flops at elaboration.
+# Ibex is instantiated with ResetAll=0, so the fetch FIFO data flops
+# (ibex_fetch_fifo rdata_q/err_q, the g_rdata_nr branch) have no reset and power
+# up as X in 4-state QuestaSim. That X blends into the unaligned/compressed
+# opcode concat ({rdata_q[1][15:0], rdata[31:16]}) and the core fetches a bogus
+# "0xX0XXX7XX", trapping as an illegal instruction even though imem holds the
+# correct word. +initreg+0 forces those flops to 0, matching real silicon and
+# the 2-state Verilator flow -> the full-SoC run reaches "JTAG RETURN OK".
+# NOTE: do NOT add +initmem here -- in this build it crashes the vsim kernel
+# (Error 218); the fetch X is a register issue, so +initreg alone is enough.
+# Override (e.g. INIT_OPTS=) to restore pure 4-state X behaviour.
+INIT_OPTS ?= +initreg+0
 
 # vlog-2244: tracer Variable implicitly static
 VLOG_OPTS = \

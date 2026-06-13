@@ -51,7 +51,7 @@ RTL MAC (`rtl/MAC/mac_pe.sv`), so it matches bit-for-bit. Regenerate it (from th
 group5 superproject root) before rebuilding the image when you want new vectors:
 
 ```sh
-python3 scripts/c_code/gen_accel_data.py            # writes Didactic-SoC/sw/accel/accel_gemm_data.h
+python3 sim/common/c_code/gen_accel_data.py        # writes Didactic-SoC/sw/accel/accel_gemm_data.h
 ```
 
 ## How the boot works (no JTAG)

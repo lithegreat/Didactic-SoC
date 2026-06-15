@@ -55,6 +55,14 @@
 #define REG_INT_EN (*(volatile uint32_t *)(ACCEL_BASE + 0x110u))
 #define REG_INT_STAT (*(volatile uint32_t *)(ACCEL_BASE + 0x114u))
 #define REG_K_DIM (*(volatile uint32_t *)(ACCEL_BASE + 0x118u))
+#define REG_BUILD_INFO (*(volatile uint32_t *)(ACCEL_BASE + 0x11Cu))
+#define REG_HW_STATUS (*(volatile uint32_t *)(ACCEL_BASE + 0x120u))
+#define REG_PERF_CTRL (*(volatile uint32_t *)(ACCEL_BASE + 0x124u))
+#define REG_PERF_CYCLES (*(volatile uint32_t *)(ACCEL_BASE + 0x128u))
+#define REG_PERF_APB_WRITES (*(volatile uint32_t *)(ACCEL_BASE + 0x12Cu))
+#define REG_PERF_APB_READS (*(volatile uint32_t *)(ACCEL_BASE + 0x130u))
+#define REG_PERF_IN_STALLS (*(volatile uint32_t *)(ACCEL_BASE + 0x134u))
+#define REG_PERF_OUT_STALLS (*(volatile uint32_t *)(ACCEL_BASE + 0x138u))
 
 // matrix_buffer_c (PADDR[9:8] == 10)
 #define MAT_C_DATA (*(volatile uint32_t *)(ACCEL_BASE + 0x200u))
@@ -66,6 +74,9 @@
 #define STATUS_BUSY_BIT (1u << 0)
 #define STATUS_DONE_BIT (1u << 1)
 #define MAT_CTRL_RESET_BIT (1u << 0)
+#define PERF_CLEAR_BIT (1u << 0)
+#define HW_STATUS_OUT_STALL_SEEN_BIT (1u << 2)
+#define HW_STATUS_COUNTER_OVERFLOW_BIT (1u << 3)
 
 // Result sink that the testbench / debugger can observe:
 //   0xACCE5500 -> PASS, 0xBADD0000 | mismatch_count -> FAIL.
@@ -74,12 +85,23 @@
 // JTAG-driven tb_didactic polls to detect end-of-computation.
 volatile uint32_t accel_result = 0u;
 
+static uint32_t expected_build_info(void) {
+  return ((uint32_t)ACC_DATA_W << 24) | ((uint32_t)ACC_K << 16) | ((uint32_t)ACC_N << 8) |
+         (uint32_t)ACC_M;
+}
+
 int main(void) {
   uart_init();
   uart_print("accel: start\n");
 
   // Bring the TUM subsystem out of reset and enable its clock.
   ss_init(ACCEL_SS);
+
+  if (REG_BUILD_INFO != expected_build_info()) {
+    uart_print("accel: BUILD INFO MISMATCH\n");
+    accel_result = 0xBADD0002u;
+    return 2;
+  }
 
   // 1. Reset the A/B write pointers (transient, self-clearing).
   MAT_AB_CTRL = MAT_CTRL_RESET_BIT;
@@ -116,6 +138,10 @@ int main(void) {
   REG_N_DIM = ACC_N;
   REG_K_DIM = ACC_K;
 
+  // Clear performance counters after preload/config writes. The subsequent
+  // counters cover the start/poll/readback window and the compute phase.
+  REG_PERF_CTRL = PERF_CLEAR_BIT;
+
   // 6. Issue a start pulse to the compute FSM.
   REG_CTRL = CTRL_START_BIT;
 
@@ -142,8 +168,22 @@ int main(void) {
     }
   }
 
+  const uint32_t perf_apb_reads = REG_PERF_APB_READS;
+  const uint32_t perf_apb_writes = REG_PERF_APB_WRITES;
+  const uint32_t perf_cycles = REG_PERF_CYCLES;
+  const uint32_t perf_out_stalls = REG_PERF_OUT_STALLS;
+  const uint32_t hw_status = REG_HW_STATUS;
+
   // 9. Clear the done status (W1C) for a clean end state.
   REG_STATUS = STATUS_DONE_BIT;
+
+    if ((perf_cycles == 0u) || (perf_apb_writes == 0u) || (perf_apb_reads < c_count) ||
+      (perf_out_stalls != 0u) ||
+      ((hw_status & (HW_STATUS_OUT_STALL_SEEN_BIT | HW_STATUS_COUNTER_OVERFLOW_BIT)) != 0u)) {
+    uart_print("accel: PERF FAIL\n");
+    accel_result = 0xBADD0003u;
+    return 3;
+  }
 
   if (mismatches == 0u) {
     uart_print("accel: PASS\n");

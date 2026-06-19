@@ -8,7 +8,7 @@
 SHELL = bash
 VIVADO ?= vivado
 
-TEST ?= blink
+TEST ?= accel
 
 export BUILD_DIR ?= ../build
 export PROJECT ?= z1
@@ -20,7 +20,7 @@ ACCEL_CONFIG ?= ../../sim/common/c_code/accel_config.py
 #   make all_xilinx ACCEL_VARIANT=int8_8x8
 # or directly:
 #   make all_xilinx ACCEL_DIM=8 ACCEL_DATA_W=8
-export ACCEL_VARIANT ?= int8_16x16
+export ACCEL_VARIANT ?= int8_8x8
 export ACCEL_DIM ?= $(shell python3 $(ACCEL_CONFIG) --variant $(ACCEL_VARIANT) --format shell | sed -n 's/^ACCEL_DIM=//p')
 export ACCEL_DATA_W ?= $(shell python3 $(ACCEL_CONFIG) --variant $(ACCEL_VARIANT) --format shell | sed -n 's/^ACCEL_DATA_W=//p')
 
@@ -37,4 +37,4 @@ all_xilinx_gui: check_env
 	$(VIVADO) -mode gui -source ../fpga/scripts/run_xilinx.tcl &
 
 load_elf: check_env
-	riscv32-unknown-elf-gdb $(BUILD_DIR)/fpga/sw/$(TEST).elf -x ../fpga/utils/connect-and-load.gdb
+	riscv64-unknown-elf-gdb $(BUILD_DIR)/fpga/sw/$(TEST).elf -x ../fpga/utils/connect-and-load.gdb

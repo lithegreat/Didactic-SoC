@@ -17,15 +17,19 @@ CC=$(PREFIX)-gcc
 CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/
 OBJDUMP ?= $(PREFIX)-objdump
 OBJCOPY ?= $(PREFIX)-objcopy
+TEST_SRCS = $(wildcard $(TESTCASE)/*.c)
+TEST_OBJS = $(patsubst $(TESTCASE)/%.c,$(BUILD_DIR)/sw/$(TESTCASE)_%.o,$(TEST_SRCS))
 
 env:
 	mkdir -p $(BUILD_DIR)/sw
 	echo "prerequisite: local install of RISCV32 toolchain + elf2hex"
 
-build_test:
-	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -c $(TESTCASE)/$(TESTCASE).c -o $(BUILD_DIR)/sw/$(TESTCASE).o 
+$(BUILD_DIR)/sw/$(TESTCASE)_%.o: $(TESTCASE)/%.c | env
+	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -c $< -o $@
+
+build_test: $(TEST_OBJS)
 	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -DLANGUAGE_ASSEBMLY -c common/crt0.S -o $(BUILD_DIR)/sw/crt0.o
-	$(CC) $(ARCH_FLAGS) -Tcommon/link.ld $(BUILD_DIR)/sw/$(TESTCASE).o $(BUILD_DIR)/sw/crt0.o -nostartfiles -nostdlib -Wl,--gc-sections -o $(BUILD_DIR)/sw/$(TESTCASE).elf
+	$(CC) $(ARCH_FLAGS) -Tcommon/link.ld $(TEST_OBJS) $(BUILD_DIR)/sw/crt0.o -nostartfiles -nostdlib -Wl,--gc-sections -o $(BUILD_DIR)/sw/$(TESTCASE).elf
 
 hex_test:
 	$(OBJCOPY) $(BUILD_DIR)/sw/$(TESTCASE).elf -O binary $(BUILD_DIR)/tmp.bin

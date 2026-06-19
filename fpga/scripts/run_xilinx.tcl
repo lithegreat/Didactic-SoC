@@ -73,9 +73,12 @@ set_property is_global_include true [get_files prim_assert_dummy_macros.svh]
 
 # Use xilinx specific cg          
 set VERILOG_DEFINES [list SYNTHESIS=1 FPGA=1 PRIM_DEFAULT_IMPL=prim_pkg::ImplXilinx]
-# Optional accelerator array size override (ACCEL_DIM=8 make all_xilinx).
+# Optional accelerator build overrides (ACCEL_DIM=8 ACCEL_DATA_W=8 make all_xilinx).
 if { [info exists ::env(ACCEL_DIM)] } {
   lappend VERILOG_DEFINES ACCEL_DIM=$::env(ACCEL_DIM)
+}
+if { [info exists ::env(ACCEL_DATA_W)] } {
+  lappend VERILOG_DEFINES ACCEL_DATA_W=$::env(ACCEL_DATA_W)
 }
 set_property verilog_define $VERILOG_DEFINES [current_fileset]
 

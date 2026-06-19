@@ -2,12 +2,13 @@
 
 `tb_soc_accel.sv` is a self-driving SystemVerilog testbench that instantiates the
 complete `Didactic` SoC and lets the **Ibex core actually execute the baremetal
-program `sw/accel/accel.c`**. The program streams random signed 16-bit matrices
-A/B over the system bus, starts the compute, polls `STATUS`, reads Matrix C back,
-compares every element against a precomputed golden reference, and writes a
-result word into data memory. Unlike the standalone `sim/testbenches/tb_accel.sv`
-(which pokes the accelerator's APB slave directly), this exercises the
-accelerator through the **real OBI/APB fabric**, end to end.
+program `sw/accel/accel.c`**. The default `int8_16x16` program streams random
+signed 8-bit matrices A/B over the system bus, starts the compute, polls
+`STATUS`, reads Matrix C back, compares every element against a precomputed
+golden reference, and writes a result word into data memory. Unlike the
+standalone `sim/testbenches/tb_accel.sv` (which pokes the accelerator's APB
+slave directly), this exercises the accelerator through the **real OBI/APB
+fabric**, end to end.
 
 It runs under open-source **Verilator** — no QuestaSim / Mentor license needed.
 
@@ -45,13 +46,14 @@ cp build/sw/accel.hex verification/verilator/accel.hex
 ### Test vectors (random A/B + golden C)
 
 `accel.c` includes `sw/accel/accel_gemm_data.h`, an auto-generated header with
-random signed 16-bit `accel_A`/`accel_B` and the golden `accel_C = A*B`. The
-golden is computed with the **same signed 32-bit two's-complement wrap** as the
-RTL MAC (`rtl/MAC/mac_pe.sv`), so it matches bit-for-bit. Regenerate it (from the
-group5 superproject root) before rebuilding the image when you want new vectors:
+random signed `accel_A`/`accel_B` and the golden `accel_C = A*B` for the selected
+build variant. The golden is computed with the **same signed 32-bit
+two's-complement wrap** as the RTL MAC (`rtl/MAC/mac_pe.sv`), so it matches
+bit-for-bit. Regenerate it (from the group5 superproject root) before rebuilding
+the image when you want new vectors or switch variants:
 
 ```sh
-python3 sim/common/c_code/gen_accel_data.py        # writes Didactic-SoC/sw/accel/accel_gemm_data.h
+python3 sim/common/c_code/gen_accel_data.py --variant int8_16x16
 ```
 
 ## How the boot works (no JTAG)

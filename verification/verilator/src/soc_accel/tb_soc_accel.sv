@@ -117,7 +117,7 @@ module tb_soc_accel;
     // -------------------------------------------------------------------------
     // Stimulus: release reset, then watch the result sink in data memory.
     // -------------------------------------------------------------------------
-    localparam int unsigned TIMEOUT_CYCLES = 600000;
+    localparam int unsigned TIMEOUT_CYCLES = 2000000;
     // Outcome: 0 = still running, 1 = pass, 2 = mismatch, 3 = timeout.
     logic [31:0] res;
     integer cyc;

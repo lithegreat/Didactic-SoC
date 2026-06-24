@@ -14,7 +14,7 @@ XLEN ?= 32
 PREFIX ?= riscv$(XLEN)-unknown-elf
 ARCH_FLAGS ?= -march=rv32imc -mabi=ilp32
 CC=$(PREFIX)-gcc
-CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/
+CFLAGS=-O2 -g -ffunction-sections -fdata-sections -Icommon/ -DACC_DIM=16
 OBJDUMP ?= $(PREFIX)-objdump
 OBJCOPY ?= $(PREFIX)-objcopy
 TEST_SRCS = $(wildcard $(TESTCASE)/*.c)
@@ -29,7 +29,7 @@ $(BUILD_DIR)/sw/$(TESTCASE)_%.o: $(TESTCASE)/%.c | env
 
 build_test: $(TEST_OBJS)
 	$(CC) $(ARCH_FLAGS) -D__riscv__ $(CFLAGS) -DLANGUAGE_ASSEBMLY -c common/crt0.S -o $(BUILD_DIR)/sw/crt0.o
-	$(CC) $(ARCH_FLAGS) -Tcommon/link.ld $(TEST_OBJS) $(BUILD_DIR)/sw/crt0.o -nostartfiles -nostdlib -Wl,--gc-sections -o $(BUILD_DIR)/sw/$(TESTCASE).elf
+	$(CC) $(ARCH_FLAGS) -T$(firstword $(wildcard $(TESTCASE)/*.ld) common/link.ld) $(TEST_OBJS) $(BUILD_DIR)/sw/crt0.o -nostartfiles -nostdlib -Wl,--gc-sections -o $(BUILD_DIR)/sw/$(TESTCASE).elf
 
 hex_test:
 	$(OBJCOPY) $(BUILD_DIR)/sw/$(TESTCASE).elf -O binary $(BUILD_DIR)/tmp.bin

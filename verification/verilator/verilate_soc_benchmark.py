@@ -94,6 +94,33 @@ def main() -> int:
 
     if rc == 0:
         print(Fore.GREEN + "[benchmark] PASS" + Style.RESET_ALL)
+
+        # Automatically print UART benchmark results
+        trace_path = Path("trace_core_00000000.log")
+        if trace_path.exists():
+            chars = []
+            with open(trace_path, "r", encoding="utf-8", errors="ignore") as f:
+                for line in f:
+                    if "PA:0x01030100 store:" in line:
+                        idx = line.find("PA:0x01030100 store:")
+                        val_str = line[idx + 20 :].split()[0]
+                        try:
+                            val = int(val_str, 16)
+                            chars.append(chr(val))
+                        except ValueError:
+                            pass
+            if chars:
+                print(
+                    Fore.YELLOW
+                    + "\n--- Decoded UART Benchmark Output ---"
+                    + Style.RESET_ALL
+                )
+                print("".join(chars).strip())
+                print(
+                    Fore.YELLOW
+                    + "--------------------------------------\n"
+                    + Style.RESET_ALL
+                )
         return 0
     print(Fore.RED + "[benchmark] FAIL" + Style.RESET_ALL)
     return 1

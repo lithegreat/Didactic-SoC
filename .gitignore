@@ -1,6 +1,7 @@
 build/
 obj_dir/
 obj_dir_soc_accel/
+obj_dir_soc_benchmark/
 logs/
 *.wlf
 modelsim.ini

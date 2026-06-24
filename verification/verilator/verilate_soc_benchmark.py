@@ -106,7 +106,8 @@ def main() -> int:
                         val_str = line[idx + 20 :].split()[0]
                         try:
                             val = int(val_str, 16)
-                            chars.append(chr(val))
+                            if 32 <= val <= 126 or val in (9, 10, 13):
+                                chars.append(chr(val))
                         except ValueError:
                             pass
             if chars:

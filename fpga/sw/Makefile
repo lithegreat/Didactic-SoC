@@ -11,7 +11,7 @@ SHELL = bash
 BUILD_DIR ?= ../../build/fpga
 PREFIX ?= riscv64-unknown-elf
 CC=$(PREFIX)-gcc
-CFLAGS=-mabi=ilp32 -Os -g -ffunction-sections -fdata-sections -Icommon/
+CFLAGS=-mabi=ilp32 -Os -g -ffunction-sections -fdata-sections -Icommon/ -DACC_DIM=8 -DFPGA
 ELF2HEX_BIN ?= $(PREFIX)-elf2hex
 TEST_SRCS = $(wildcard $(TESTCASE)/*.c)
 TEST_OBJS = $(patsubst $(TESTCASE)/%.c,$(BUILD_DIR)/sw/$(TESTCASE)_%.o,$(TEST_SRCS))

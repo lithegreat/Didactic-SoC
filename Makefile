@@ -105,3 +105,12 @@ verilate:
 verilate_accel:
 	@python3 ./verification/verilator/verilate_soc_accel.py
 
+# CPU vs. CPU+Accelerator GEMM benchmark (license-free, Verilator).
+# Boots the Ibex core on sw/benchmark/benchmark.c, measures both paths with
+# the mcycle CSR, and prints cycle counts + speedup over the simulated UART.
+# Requires the prebuilt program image verification/verilator/benchmark.hex
+# (see "make build_test TESTCASE=benchmark" then copy the hex).
+.PHONY: verilate_benchmark
+verilate_benchmark:
+	@python3 ./verification/verilator/verilate_soc_benchmark.py
+

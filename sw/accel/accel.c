@@ -38,18 +38,67 @@
 // JTAG-driven tb_didactic polls to detect end-of-computation.
 volatile uint32_t accel_result = 0u;
 
+#ifdef FPGA
+static void uart_print_hex32(uint32_t value) {
+  uart_print("0x");
+  for (int shift = 28; shift >= 0; shift -= 4) {
+    write_serial("0123456789ABCDEF"[(value >> shift) & 0xFu]);
+  }
+}
+
+static void uart_print_hex8(uint32_t value) {
+  uart_print("0x");
+  write_serial("0123456789ABCDEF"[(value >> 4) & 0xFu]);
+  write_serial("0123456789ABCDEF"[value & 0xFu]);
+}
+
+static void accel_print_build_info(const char *label, uint32_t value) {
+  uart_print(label);
+  uart_print(" build=");
+  uart_print_hex32(value);
+  uart_print(" M=");
+  uart_print_hex8(value & 0xFFu);
+  uart_print(" N=");
+  uart_print_hex8((value >> 8) & 0xFFu);
+  uart_print(" K=");
+  uart_print_hex8((value >> 16) & 0xFFu);
+  uart_print(" DATA_W=");
+  uart_print_hex8((value >> 24) & 0xFFu);
+  uart_print("\n");
+}
+#endif
+
 int main(void) {
+#ifdef FPGA
+  uart_init(25000000, 9600);
+#else
   uart_init();
+#endif
   uart_print("accel: start\n");
 
   // Bring the TUM subsystem out of reset and enable its clock.
   ss_init(ACCEL_SS);
 
+#ifdef FPGA
+  uint32_t hw_build_info = REG_BUILD_INFO;
+  uint32_t sw_build_info = accel_expected_build_info();
+  if (hw_build_info != sw_build_info) {
+    uart_print("accel: BUILD INFO MISMATCH\n");
+    uart_print("accel: sw variant ");
+    uart_print(ACC_VARIANT);
+    uart_print("\n");
+    accel_print_build_info("accel: hw", hw_build_info);
+    accel_print_build_info("accel: sw", sw_build_info);
+    accel_result = 0xBADD0002u;
+    return 2;
+  }
+#else
   if (!accel_build_info_matches()) {
     uart_print("accel: BUILD INFO MISMATCH\n");
     accel_result = 0xBADD0002u;
     return 2;
   }
+#endif
 
   volatile uint32_t accum[ACC_M * ACC_N];
   accel_clear_accum(accum);

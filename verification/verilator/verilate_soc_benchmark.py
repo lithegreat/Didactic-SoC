@@ -61,8 +61,8 @@ def _parse_wall_cycles(trace_path: Path, elf: Path):
       cpu_cyc   – first store to cpu_out[0] … last store to cpu_out[M*N-1]
                   (pure CPU GEMM loop, excluding init and prints)
 
-      accel_cyc – first instruction of accel_clear_accum …
-                  first instruction back in main() after accel_run_tiled_gemm
+      accel_cyc – entry to accel_run_tiled_gemm …
+                  first instruction back in main() after it returns
 
     Returns (cpu_cyc, accel_cyc) or (0, 0) on parse failure.
     """
@@ -71,7 +71,6 @@ def _parse_wall_cycles(trace_path: Path, elf: Path):
 
     syms = _nm_symbols(elf)
     main_addr        = syms.get("main", 0)
-    clear_addr       = syms.get("accel_clear_accum", 0)
     tiled_addr       = syms.get("accel_run_tiled_gemm", 0)
     cpu_out_base     = syms.get("cpu_out.0", 0)
     # cpu_out holds ACC_M * ACC_N int32_t values; derive size from accum symbol
@@ -110,13 +109,12 @@ def _parse_wall_cycles(trace_path: Path, elf: Path):
                             cpu_start = cyc
                         cpu_end = cyc
 
-            # ── Accel path: clear_accum entry → return to main after tiled ─
-            if accel_start is None and pc == clear_addr:
+            # ── Accel path: tiled_gemm entry → return to main ─────────────
+            if accel_start is None and pc == tiled_addr:
                 accel_start = cyc
+                tiled_visited = True
 
             if accel_start is not None and accel_end is None:
-                if not tiled_visited and pc == tiled_addr:
-                    tiled_visited = True
                 if tiled_visited and main_addr <= pc < post_main_addr:
                     accel_end = cyc
                     break  # all data collected
@@ -237,7 +235,7 @@ def main() -> int:
                 + Style.RESET_ALL
             )
             print(f"  CPU  GEMM:   {cpu_cyc:>8} cyc  (first→last store to cpu_out[])")
-            print(f"  Accel path:  {accel_cyc:>8} cyc  (accel_clear_accum → tiled_gemm return)")
+            print(f"  Accel path:  {accel_cyc:>8} cyc  (accel_run_tiled_gemm entry → return to main)")
             if hw_total:
                 print(f"    compute:   {hw_compute_cyc:>8} cyc  (REG_PERF_CYCLES, systolic array)")
                 print(f"    bus:       {hw_bus_cyc:>8} cyc  (APB transactions x2)")

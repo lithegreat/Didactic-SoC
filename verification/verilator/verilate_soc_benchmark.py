@@ -35,8 +35,10 @@ VERILATOR_DIR = Path(__file__).parent
 TB_FILE = VERILATOR_DIR / "src" / "soc_accel" / "tb_soc_accel.sv"
 
 
-# Default ELF path (built from sw/Makefile TESTCASE=benchmark)
-_default_elf = Path(__file__).parent.parent.parent / "build" / "sw" / "benchmark.elf"
+# Default ELF: deployed alongside benchmark.hex; falls back to build output.
+_deployed_elf = Path(__file__).parent / "benchmark.elf"
+_built_elf    = Path(__file__).parent.parent.parent / "build" / "sw" / "benchmark.elf"
+_default_elf  = _deployed_elf if _deployed_elf.exists() else _built_elf
 ELF_FILE = Path(os.environ.get("BENCH_ELF", str(_default_elf)))
 
 

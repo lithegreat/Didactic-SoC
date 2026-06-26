@@ -106,15 +106,36 @@ verilate_accel:
 	@python3 ./verification/verilator/verilate_soc_accel.py
 
 # CPU vs. CPU+Accelerator GEMM benchmark (license-free, Verilator).
-# Boots the Ibex core on sw/benchmark/benchmark.c, measures bus cycles
-# (APB writes+reads x2) and compute cycles (REG_PERF_CYCLES) separately,
-# then prints speedup over the simulated UART.
-# Requires the prebuilt program image verification/verilator/benchmark.hex.
-# To rebuild it (requires the xpack riscv-none-elf toolchain):
-#   make -C sw build_test TESTCASE=benchmark CFLAGS="-O2 -g -ffunction-sections -fdata-sections -Icommon/ -Ibenchmark/ -Iaccel/ -DACC_DIM=16"
-#   objcopy build/sw/benchmark.elf --only-section=.text -O binary build/tmp.bin
-#   xxd -ps build/tmp.bin | tr -d '\n' | sed -r 's/(.{8})/\1\n/g' | sed -E 's/(..)(..)(..)(..)/\4\3\2\1/' > verification/verilator/benchmark.hex
-.PHONY: verilate_benchmark
-verilate_benchmark:
+# Boots the Ibex core on sw/benchmark/benchmark.c, measures bus / compute
+# cycles from hardware perf counters and the Ibex instruction trace, then
+# prints the wall-clock speedup.
+#
+# One-step targets (build firmware + run sim):
+#   make verilate_benchmark      — 16×16 INT8, full hardware utilisation
+#   make verilate_benchmark_16   — same as above (explicit)
+#   make verilate_benchmark_8    — 8×8 INT8, partial hardware utilisation
+#
+# Toolchain prefix — override if your riscv gcc is installed elsewhere.
+BENCH_CC_PREFIX  ?= riscv-none-elf
+BENCH_CFLAGS_BASE = -O2 -g -ffunction-sections -fdata-sections -Icommon/
+
+# Internal macro: build sw/benchmark, copy hex, then run the sim.
+# $(1) = ACC_DIM value   $(2) = extra CFLAGS (e.g. -DBENCH_SKIP_BUILD_INFO)
+define _bench_run
+	$(MAKE) -C sw PREFIX=$(BENCH_CC_PREFIX) TESTCASE=benchmark TEST=benchmark \
+		CFLAGS="$(BENCH_CFLAGS_BASE) -DACC_DIM=$(1) $(2)" test
+	cp build/sw/benchmark.hex verification/verilator/benchmark.hex
 	@python3 ./verification/verilator/verilate_soc_benchmark.py
+endef
+
+.PHONY: verilate_benchmark verilate_benchmark_16 verilate_benchmark_8
+
+verilate_benchmark_16:
+	$(call _bench_run,16,)
+
+verilate_benchmark_8:
+	$(call _bench_run,8,-DBENCH_SKIP_BUILD_INFO)
+
+# Default: 16×16 (full hardware match).
+verilate_benchmark: verilate_benchmark_16
 

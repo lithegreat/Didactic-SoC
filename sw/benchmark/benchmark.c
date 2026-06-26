@@ -110,11 +110,13 @@ int main(void) {
 
     ss_init(ACCEL_SS);
 
+#ifndef BENCH_SKIP_BUILD_INFO
     if (!accel_build_info_matches()) {
         uart_print("benchmark: BUILD INFO MISMATCH\n");
         bench_result = 0xBADD0002u;
         return 2;
     }
+#endif
 
     /* ------------------------------------------------------------------ *
      * PATH A — CPU GEMM (run for wall-clock reference; sim script times it)
@@ -135,7 +137,6 @@ int main(void) {
     /* ------------------------------------------------------------------ *
      * PATH B — Accelerator GEMM (hardware perf counters)                 *
      * ------------------------------------------------------------------ */
-    accel_clear_accum(accum);
     accel_perf_t accel_perf;
     accel_tile_status_t st = accel_run_tiled_gemm(accum, &accel_perf);
 

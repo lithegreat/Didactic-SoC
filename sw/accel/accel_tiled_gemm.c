@@ -3,9 +3,9 @@
 #include "accel_gemm_data.h"
 
 enum {
-  ACCEL_TILE_M_CAP = 8u,
-  ACCEL_TILE_N_CAP = 8u,
-  ACCEL_TILE_K_CAP = 8u,
+  ACCEL_TILE_M_CAP = ACC_M,
+  ACCEL_TILE_N_CAP = ACC_N,
+  ACCEL_TILE_K_CAP = ACC_K,
 };
 
 void accel_clear_accum(volatile uint32_t accum[ACC_M * ACC_N]) {

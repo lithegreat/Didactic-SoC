@@ -1,21 +1,15 @@
-1/*
+/*
  * bench_timer.h
  * -------------
  * RISC-V mcycle CSR helpers for cycle-accurate benchmarking on the Ibex core.
  *
- * STATUS: Ibex in the Edu4Chip Didactic SoC raises an illegal-instruction
- * exception when firmware reads mcycle/minstret.  Root cause: the Ibex
- * instance is instantiated with MHPMCounterNum=0 and the elaborated Verilator
- * model routes those CSR addresses to the default-illegal branch of the
- * unique case in ibex_cs_registers.sv.
+ * STATUS: mcycle IS accessible in this SoC build.  Although the Ibex is
+ * instantiated with MHPMCounterNum=0 (no additional HPM3-31 counters),
+ * ibex_cs_registers.sv always includes CSR_MCYCLE (0xB00) and CSR_MCYCLEH
+ * (0xB80) in its decode path without guarding them on MHPMCounterNum.
+ * Firmware reads return the current 64-bit cycle counter value.
  *
- * These helpers are RETAINED here for reference and for future SoC builds
- * where the CSR is accessible (e.g. with the RISC-V Ibex configured with
- * MHPMCounterNum > 0 or a different RISC-V core), but benchmark.c
- * currently uses the accelerator's REG_PERF_CYCLES counter and an
- * instruction-iteration estimator instead.
- *
- * Usage (when available):
+ * Usage:
  *   uint32_t t0 = bench_cycles_lo();
  *   // ... timed code ...
  *   uint32_t elapsed = bench_elapsed_lo(t0);
@@ -31,7 +25,6 @@
 
 /*
  * bench_cycles_lo - Read the lower 32 bits of mcycle.
- * NOTE: May raise an illegal-instruction exception on some Ibex builds.
  */
 static inline uint32_t bench_cycles_lo(void) {
     uint32_t c;

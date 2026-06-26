@@ -17,8 +17,8 @@ __DYNAMIC = 0;
 
 MEMORY
 {
-  IMEM (rx ) : ORIGIN = 0x01000000, LENGTH = 0x1000
-  DMEM (rwx) : ORIGIN = 0x01010000, LENGTH = 0x1000
+  IMEM (rx ) : ORIGIN = 0x01000000, LENGTH = 0x4000
+  DMEM (rwx) : ORIGIN = 0x01010000, LENGTH = 0x4000
 }
 
 STACK_SIZE = 0x400; 
@@ -37,12 +37,12 @@ SECTIONS
   .data : ALIGN(4)
   {
     *(.data*);
-  } > DMEM
+  } > DMEM AT > IMEM
 
   .sdata : ALIGN(4)
   {
     *(.sdata*);
-  } > DMEM
+  } > DMEM AT > IMEM
 
   .bss (NOLOAD) :
   {

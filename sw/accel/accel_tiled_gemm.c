@@ -3,9 +3,9 @@
 #include "accel_gemm_data.h"
 
 enum {
-  ACCEL_TILE_M_CAP = 8u,
-  ACCEL_TILE_N_CAP = 8u,
-  ACCEL_TILE_K_CAP = 8u,
+  ACCEL_TILE_M_CAP = ACC_M,
+  ACCEL_TILE_N_CAP = ACC_N,
+  ACCEL_TILE_K_CAP = ACC_K,
 };
 
 void accel_clear_accum(volatile uint32_t accum[ACC_M * ACC_N]) {
@@ -14,7 +14,14 @@ void accel_clear_accum(volatile uint32_t accum[ACC_M * ACC_N]) {
   }
 }
 
-accel_tile_status_t accel_run_tiled_gemm(volatile uint32_t accum[ACC_M * ACC_N]) {
+accel_tile_status_t accel_run_tiled_gemm(volatile uint32_t accum[ACC_M * ACC_N],
+                                         accel_perf_t *perf) {
+  if (perf) {
+    perf->compute_cycles = 0u;
+    perf->apb_writes     = 0u;
+    perf->apb_reads      = 0u;
+  }
+
   const uint32_t tile_m_cap = accel_min_u32(ACCEL_TILE_M_CAP, ACC_M);
   const uint32_t tile_n_cap = accel_min_u32(ACCEL_TILE_N_CAP, ACC_N);
   const uint32_t tile_k_cap = accel_min_u32(ACCEL_TILE_K_CAP, ACC_K);
@@ -30,7 +37,7 @@ accel_tile_status_t accel_run_tiled_gemm(volatile uint32_t accum[ACC_M * ACC_N])
             .n = accel_min_u32(tile_n_cap, ACC_N - n0),
             .k = accel_min_u32(tile_k_cap, ACC_K - k0),
         };
-        accel_tile_status_t status = accel_run_tile(&tile, accum);
+        accel_tile_status_t status = accel_run_tile(&tile, accum, perf);
         if (status != ACCEL_TILE_OK) {
           return status;
         }

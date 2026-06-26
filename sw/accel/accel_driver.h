@@ -28,11 +28,19 @@ typedef struct {
   uint32_t k;
 } accel_tile_t;
 
+/* Accumulated hardware performance counters across all tiles. */
+typedef struct {
+  uint32_t compute_cycles; /* sum of REG_PERF_CYCLES (START→DONE) across tiles */
+  uint32_t apb_writes;     /* sum of REG_PERF_APB_WRITES (all writes incl. load) */
+  uint32_t apb_reads;      /* sum of REG_PERF_APB_READS  (status polls + C read) */
+} accel_perf_t;
+
 uint32_t accel_min_u32(uint32_t a, uint32_t b);
 uint32_t accel_expected_build_info(void);
 int accel_build_info_matches(void);
 accel_tile_status_t accel_run_tile(
     const accel_tile_t *tile,
-    volatile uint32_t accum[ACC_M * ACC_N]);
+    volatile uint32_t accum[ACC_M * ACC_N],
+    accel_perf_t *perf);
 
 #endif // __ACCEL_DRIVER_H__

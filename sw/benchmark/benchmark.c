@@ -6,31 +6,27 @@
  *
  * Timing strategy
  * ---------------
- * The Ibex instance in this SoC does not expose mcycle/minstret over its
- * APB slave port, so cycle counting uses the accelerator's own hardware
- * performance counter (REG_PERF_CYCLES) for the accelerator path, and a
- * manually counted iteration counter for the CPU path.
+ * Hardware perf counters (REG_PERF_CYCLES / REG_PERF_APB_WRITES/READS) give
+ * an exact breakdown of the accelerator path into compute and bus components.
+ * mcycle is not accessible in this Ibex build (MHPMCounterNum=0 disables it
+ * at the Verilator level despite the RTL case entry).  Total wall-clock cycles
+ * for both paths are reported by the simulation script via Ibex trace analysis.
  *
- * CPU GEMM cost is estimated as:
- *   cpu_iter_count * CPU_CYCLES_PER_ITER
- * where CPU_CYCLES_PER_ITER is calibrated from the Ibex pipeline model:
- *   inner-loop body ≈ 4 instructions (mul + add + index + branch) at
- *   roughly 1 CPI = 4 cycles; outer loop overhead ~2 cycles per K step.
- *
- * Accelerator GEMM cost is the exact value from REG_PERF_CYCLES (hardware
- * cycles consumed by the systolic array, excluding APB overhead).
- *
- * UART output
- * -----------
+ * UART output (firmware)
+ * ----------------------
  *   benchmark: start
- *   cpu est cyc: <N>  (<N> inner iters)
- *   hw cycles:   <N>
- *   speedup: <int>.<2-digit>x
+ *   compute: <N> cyc  (REG_PERF_CYCLES, accel only)
+ *   bus:     <N> cyc  (<N> wr + <N> rd) x2
  *   benchmark: PASS
+ *
+ * Additional wall-clock breakdown printed by verilate_soc_benchmark.py:
+ *   CPU GEMM:   <N> cyc  (trace: first->last store to cpu_out)
+ *   Accel path: <N> cyc  (trace: accel_clear_accum->tiled_gemm return)
+ *   Speedup:    X.XXx
  *
  * Result code (DMEM[0], observed by the testbench)
  * --------------------------------------------------
- *   0xACCE5500  PASS  (matches the testbench RESULT_PASS criterion)
+ *   0xACCE5500  PASS
  *   0xBADD0001  accelerator timeout
  *   0xBADD0002  build-info mismatch
  *   0xBADD0003  accelerator perf-counter sanity fail
@@ -61,16 +57,6 @@
  * We overwrite it before returning.
  * ------------------------------------------------------------------------- */
 volatile uint32_t bench_result = 0xDEAD0000u;
-
-/* Estimated Ibex cycles per inner-loop body of the CPU GEMM:
- *   lw/lb  A[i*K+k]   ~2 cyc
- *   lw/lb  B[k*N+j]   ~2 cyc
- *   mul               ~1 cyc  (RV32M fast multiplier)
- *   add               ~1 cyc
- *   loop overhead     ~2 cyc  (branch + index increments)
- * Total ≈ 8 cycles per (i,j,k) triple.
- */
-#define CPU_CYCLES_PER_ITER 8u
 
 /* -------------------------------------------------------------------------
  * Minimal unsigned decimal printer (no printf in nostdlib).
@@ -131,33 +117,27 @@ int main(void) {
     }
 
     /* ------------------------------------------------------------------ *
-     * PATH A — CPU GEMM (estimated cycle count)                           *
+     * PATH A — CPU GEMM (run for wall-clock reference; sim script times it)
      * ------------------------------------------------------------------ */
     static volatile int32_t cpu_out[ACC_M * ACC_N];
 
-    /* Run the CPU GEMM and count inner iterations. */
-    volatile uint32_t inner_iters = 0u;
     for (int i = 0; i < ACC_M; i++) {
         for (int j = 0; j < ACC_N; j++) {
             int32_t s = 0;
             for (int k = 0; k < ACC_K; k++) {
                 s += (int32_t)accel_A[i * ACC_K + k] *
                      (int32_t)accel_B[k * ACC_N + j];
-                inner_iters++;
             }
             cpu_out[i * ACC_N + j] = s;
         }
     }
 
-    uint32_t cpu_est_cyc = inner_iters * CPU_CYCLES_PER_ITER;
-    print_u32(inner_iters, " inner iters  ");
-    print_u32(cpu_est_cyc, " cyc (est)  <- cpu gemm\n");
-
     /* ------------------------------------------------------------------ *
-     * PATH B — Accelerator GEMM (hardware cycle counter)                 *
+     * PATH B — Accelerator GEMM (hardware perf counters)                 *
      * ------------------------------------------------------------------ */
     accel_clear_accum(accum);
-    accel_tile_status_t st = accel_run_tiled_gemm(accum);
+    accel_perf_t accel_perf;
+    accel_tile_status_t st = accel_run_tiled_gemm(accum, &accel_perf);
 
     if (st == ACCEL_TILE_TIMEOUT) {
         uart_print("benchmark: TIMEOUT\n");
@@ -170,22 +150,28 @@ int main(void) {
         return 3;
     }
 
-    uint32_t hw_cyc = REG_PERF_CYCLES;
-
     if (accel_count_mismatches(accum) != 0u) {
         uart_print("benchmark: ACCEL MISMATCH\n");
         bench_result = 0xBADD0005u;
         return 5;
     }
 
-    print_u32(hw_cyc, " cyc  <- hw (accel only, from REG_PERF_CYCLES)\n");
+    /*
+     * Hardware breakdown:
+     *   compute = REG_PERF_CYCLES (systolic array START→DONE, all tiles)
+     *   bus     = (APB writes + reads) × 2 clk  (PREADY=1, no wait states)
+     * SW overhead (loop control, packing, accumulation) is reported by
+     * verilate_soc_benchmark.py from the Ibex instruction trace.
+     */
+    uint32_t compute_cyc = accel_perf.compute_cycles;
+    uint32_t bus_cyc     = (accel_perf.apb_writes + accel_perf.apb_reads) * 2u;
 
-    /* ------------------------------------------------------------------ *
-     * Speedup = floor((cpu_est_cyc * 100) / hw_cyc)                      *
-     * ------------------------------------------------------------------ */
-    uint32_t sx100 = (hw_cyc > 0u) ? (cpu_est_cyc * 100u) / hw_cyc : 0u;
-    uart_print("speedup: ");
-    print_speedup(sx100);
+    uart_print("compute: ");
+    print_u32(compute_cyc, " cyc  (REG_PERF_CYCLES, accel)\n");
+    uart_print("bus:     ");
+    print_u32(bus_cyc, " cyc  (");
+    print_u32(accel_perf.apb_writes, " wr + ");
+    print_u32(accel_perf.apb_reads,  " rd) x2\n");
 
     uart_print("benchmark: PASS\n");
 

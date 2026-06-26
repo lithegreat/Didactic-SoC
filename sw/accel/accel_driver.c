@@ -67,21 +67,22 @@ static int wait_done(void) {
   return timeout != 0u;
 }
 
-static int perf_counters_are_sane(const accel_tile_t *tile) {
-  const uint32_t perf_apb_reads = REG_PERF_APB_READS;
-  const uint32_t perf_apb_writes = REG_PERF_APB_WRITES;
-  const uint32_t perf_cycles = REG_PERF_CYCLES;
-  const uint32_t perf_out_stalls = REG_PERF_OUT_STALLS;
-  const uint32_t hw_status = REG_HW_STATUS;
-
-  return (perf_cycles != 0u) && (perf_apb_writes != 0u) && (perf_apb_reads >= (tile->m * tile->n)) &&
-         (perf_out_stalls == 0u) &&
+static int perf_vals_sane(
+    const accel_tile_t *tile,
+    uint32_t cycles, uint32_t apb_writes, uint32_t apb_reads,
+    uint32_t out_stalls, uint32_t hw_status) {
+  return (cycles != 0u) && (apb_writes != 0u) && (apb_reads >= (tile->m * tile->n)) &&
+         (out_stalls == 0u) &&
          ((hw_status & (HW_STATUS_OUT_STALL_SEEN_BIT | HW_STATUS_COUNTER_OVERFLOW_BIT)) == 0u);
 }
 
 accel_tile_status_t accel_run_tile(
     const accel_tile_t *tile,
-    volatile uint32_t accum[ACC_M * ACC_N]) {
+    volatile uint32_t accum[ACC_M * ACC_N],
+    accel_perf_t *perf) {
+  /* Clear perf counters BEFORE data load so all APB transactions are captured. */
+  REG_PERF_CTRL = PERF_CLEAR_BIT;
+
   MAT_AB_CTRL = MAT_CTRL_RESET_BIT;
   MAT_C_CTRL = MAT_CTRL_RESET_BIT;
 
@@ -92,7 +93,6 @@ accel_tile_status_t accel_run_tile(
   write_a_tile(tile);
   write_b_tile(tile);
 
-  REG_PERF_CTRL = PERF_CLEAR_BIT;
   REG_CTRL = CTRL_START_BIT;
 
   if (!wait_done()) {
@@ -106,7 +106,24 @@ accel_tile_status_t accel_run_tile(
     }
   }
 
-  accel_tile_status_t status = perf_counters_are_sane(tile) ? ACCEL_TILE_OK : ACCEL_TILE_PERF_FAIL;
+  /* Snapshot counters before the sanity-check reads (which are also APB reads). */
+  const uint32_t tile_cycles     = REG_PERF_CYCLES;
+  const uint32_t tile_apb_writes = REG_PERF_APB_WRITES;
+  const uint32_t tile_apb_reads  = REG_PERF_APB_READS;
+  const uint32_t tile_out_stalls = REG_PERF_OUT_STALLS;
+  const uint32_t tile_hw_status  = REG_HW_STATUS;
+
+  if (perf) {
+    perf->compute_cycles += tile_cycles;
+    perf->apb_writes     += tile_apb_writes;
+    perf->apb_reads      += tile_apb_reads;
+  }
+
+  accel_tile_status_t status =
+      perf_vals_sane(tile, tile_cycles, tile_apb_writes, tile_apb_reads,
+                     tile_out_stalls, tile_hw_status)
+          ? ACCEL_TILE_OK
+          : ACCEL_TILE_PERF_FAIL;
   REG_STATUS = STATUS_DONE_BIT;
   return status;
 }

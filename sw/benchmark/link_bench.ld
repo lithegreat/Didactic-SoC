@@ -37,12 +37,12 @@ SECTIONS
   .data : ALIGN(4)
   {
     *(.data*);
-  } > DMEM
+  } > DMEM AT > IMEM
 
   .sdata : ALIGN(4)
   {
     *(.sdata*);
-  } > DMEM
+  } > DMEM AT > IMEM
 
   .bss (NOLOAD) :
   {

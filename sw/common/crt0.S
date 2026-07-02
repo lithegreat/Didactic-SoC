@@ -20,10 +20,11 @@ reset_handler:
 /* Didactic specific return code pass over through jtag */
   .global postMain
 postMain:
-  li t0, 0x01020380
+  li t0, 0x01200380
   li t1, 0x80000000
   or a0, a0, t1
   sw a0, 0(t0)
+  j  loop
 
   .global changeStack
 changeStack:

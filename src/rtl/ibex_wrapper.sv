@@ -18,7 +18,7 @@
 */
 
 module ibex_wrapper #(
-    parameter                              DmBaseAddr       = 32'h01020000,
+    parameter                              DmBaseAddr       = 32'h01200000,
     parameter unsigned                     DmExceptionAddr  = 32'h1A110808,
     parameter unsigned                     DmHaltAddr       = 32'h1A110800,
     parameter bit                          ICache           = 1'b0,

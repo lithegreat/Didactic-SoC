@@ -22,7 +22,7 @@ module io_cell #(
     inout  wire  PAD
   );
 
-  assign PAD     = ( ~io_cell_cfg[0] ) ? FROM_CORE : 1'bz;
+  assign PAD     = ( ~io_cell_cfg[0] ) ? FROM_CORE : 1'b0;
   assign TO_CORE = ( ~io_cell_cfg[0] ) ? 1'b0      :  PAD;
 
 endmodule

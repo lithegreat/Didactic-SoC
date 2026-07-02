@@ -20,10 +20,11 @@ reset_handler:
 /* Didactic specific return code pass over through jtag */
   .global postMain
 postMain:
-  li t0, 0x01020380
+  li t0, 0x01200380
   li t1, 0x80000000
   or a0, a0, t1
   sw a0, 0(t0)
+  j  loop
 
   .global changeStack
 changeStack:
@@ -33,7 +34,7 @@ changeStack:
   .section .vectors, "ax"
   .option norvc;
   .org 0x0
-  jal x0, reset_handler
+  jal x0, default_handler
   jal x0, default_handler
   jal x0, default_handler
   jal x0, default_handler

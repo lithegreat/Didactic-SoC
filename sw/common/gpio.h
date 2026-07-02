@@ -13,28 +13,28 @@
 
 #include <stdint.h>
 
-#define ADDR 0x01030000
+#define ADDR 0x01300000
 
 #define PAD_IN  *(volatile uint32_t *)(ADDR+0x08)
 #define PAD_OUT *(volatile uint32_t *)(ADDR+0x0C)
 
-#define CTRL_BASE 0x01040000
-#define PAD_CFG_GPIO0 *(volatile uint32_t*)(CTRL_BASE + 0x4C)
-#define PAD_CFG_GPIO1 *(volatile uint32_t*)(CTRL_BASE + 0x50)
-#define PAD_CFG_GPIO2 *(volatile uint32_t*)(CTRL_BASE + 0x54)
-#define PAD_CFG_GPIO3 *(volatile uint32_t*)(CTRL_BASE + 0x58)
-#define PAD_CFG_GPIO4 *(volatile uint32_t*)(CTRL_BASE + 0x5C)
-#define PAD_CFG_GPIO5 *(volatile uint32_t*)(CTRL_BASE + 0x60)
-#define PAD_CFG_GPIO6 *(volatile uint32_t*)(CTRL_BASE + 0x64)
-#define PAD_CFG_GPIO7 *(volatile uint32_t*)(CTRL_BASE + 0x68)
-#define PAD_CFG_GPIO8 *(volatile uint32_t*)(CTRL_BASE + 0x6C)
-#define PAD_CFG_GPIO9 *(volatile uint32_t*)(CTRL_BASE + 0x70)
-#define PAD_CFG_GPIO10 *(volatile uint32_t*)(CTRL_BASE + 0x74)
-#define PAD_CFG_GPIO11 *(volatile uint32_t*)(CTRL_BASE + 0x78)
-#define PAD_CFG_GPIO12 *(volatile uint32_t*)(CTRL_BASE + 0x7C)
-#define PAD_CFG_GPIO13 *(volatile uint32_t*)(CTRL_BASE + 0x80)
-#define PAD_CFG_GPIO14 *(volatile uint32_t*)(CTRL_BASE + 0x84)
-#define PAD_CFG_GPIO15 *(volatile uint32_t*)(CTRL_BASE + 0x88)
+#define CTRL_BASE 0x01400000
+#define PAD_CFG_GPIO0 *(volatile uint32_t*)(CTRL_BASE + 0x6C)
+#define PAD_CFG_GPIO1 *(volatile uint32_t*)(CTRL_BASE + 0x70)
+#define PAD_CFG_GPIO2 *(volatile uint32_t*)(CTRL_BASE + 0x74)
+#define PAD_CFG_GPIO3 *(volatile uint32_t*)(CTRL_BASE + 0x78)
+#define PAD_CFG_GPIO4 *(volatile uint32_t*)(CTRL_BASE + 0x7C)
+#define PAD_CFG_GPIO5 *(volatile uint32_t*)(CTRL_BASE + 0x80)
+#define PAD_CFG_GPIO6 *(volatile uint32_t*)(CTRL_BASE + 0x84)
+#define PAD_CFG_GPIO7 *(volatile uint32_t*)(CTRL_BASE + 0x88)
+#define PAD_CFG_GPIO8 *(volatile uint32_t*)(CTRL_BASE + 0x8C)
+#define PAD_CFG_GPIO9 *(volatile uint32_t*)(CTRL_BASE + 0x90)
+#define PAD_CFG_GPIO10 *(volatile uint32_t*)(CTRL_BASE + 0x94)
+#define PAD_CFG_GPIO11 *(volatile uint32_t*)(CTRL_BASE + 0x98)
+#define PAD_CFG_GPIO12 *(volatile uint32_t*)(CTRL_BASE + 0x9C)
+#define PAD_CFG_GPIO13 *(volatile uint32_t*)(CTRL_BASE + 0xA0)
+#define PAD_CFG_GPIO14 *(volatile uint32_t*)(CTRL_BASE + 0xA4)
+#define PAD_CFG_GPIO15 *(volatile uint32_t*)(CTRL_BASE + 0xA8)
 
 void gpio_init_out(const uint32_t index){
   volatile uint32_t mask = 0;

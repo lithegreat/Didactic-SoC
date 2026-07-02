@@ -11,7 +11,7 @@ VIVADO ?= vivado
 TEST ?= accel
 
 export BUILD_DIR ?= ../build
-export PROJECT ?= z1
+export PROJECT ?= a7
 
 ACCEL_CONFIG ?= ../../sim/common/c_code/accel_config.py
 

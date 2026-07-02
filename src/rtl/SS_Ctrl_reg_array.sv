@@ -57,26 +57,8 @@ module SS_Ctrl_reg_array #(
 
     // Interface: rst_ss_0
     output logic [NUM_SS-1:0] reset_ss,
-
-    // Interface: ss_ctrl_0
-    output logic                 irq_en_0,
-    output logic [SS_CTRL_W-1:0] ss_ctrl_0,
-
-    // Interface: ss_ctrl_1
-    output logic                 irq_en_1,
-    output logic [SS_CTRL_W-1:0] ss_ctrl_1,
-
-    // Interface: ss_ctrl_2
-    output logic                 irq_en_2,
-    output logic [SS_CTRL_W-1:0] ss_ctrl_2,
-
-    // Interface: ss_ctrl_3
-    output logic                 irq_en_3,
-    output logic [SS_CTRL_W-1:0] ss_ctrl_3,
-
-    // Interface: ss_ctrl_4
-    output logic                 irq_en_4,
-    output logic [SS_CTRL_W-1:0] ss_ctrl_4,
+    output logic [NUM_SS-1:0] irq_en_ss,
+    output logic [NUM_SS-1:0] clk_en_ss,
 
     // Interface: pmod_ctrl
     output logic [7:0] pmod_sel,
@@ -88,12 +70,9 @@ module SS_Ctrl_reg_array #(
 
   logic [31:0] fetch_en_reg;
   logic [31:0] ss_rst_reg;
+  logic [31:0] ss_irq_en_reg;
+  logic [31:0] ss_clk_en_reg;
   logic [31:0] icn_ctrl_reg;
-  logic [31:0] ss_0_ctrl_reg;
-  logic [31:0] ss_1_ctrl_reg;
-  logic [31:0] ss_2_ctrl_reg;
-  logic [31:0] ss_3_ctrl_reg;
-  logic [31:0] ss_4_ctrl_reg;
   logic [31:0] ss_ctrl_reserved_1_reg;
   logic [31:0] pmod_sel_reg;
   // gpio layout: uart/spi/gpio
@@ -114,12 +93,9 @@ module SS_Ctrl_reg_array #(
     if (~reset_n) begin
         fetch_en_reg <= 'h5;
         ss_rst_reg <= 'h0;
+        ss_irq_en_reg <= 'h0;
+        ss_clk_en_reg <= 'h0;
         icn_ctrl_reg <= 'h0;
-        ss_0_ctrl_reg <= 'h0;
-        ss_1_ctrl_reg <= 'h0;
-        ss_2_ctrl_reg <= 'h0;
-        ss_3_ctrl_reg <= 'h0;
-        ss_4_ctrl_reg <= 'h0;
         ss_ctrl_reserved_1_reg <= 'h0;
         pmod_sel_reg <= 'h4;
         for(int i=0; i < IOCELL_COUNT; i++) begin
@@ -148,12 +124,9 @@ module SS_Ctrl_reg_array #(
           'h0:  fetch_en_reg <= wdata_i;
           'h4:  ss_rst_reg   <= wdata_i;
 
-          'h8:  icn_ctrl_reg           <= wdata_i;
-          'hC:  ss_0_ctrl_reg          <= wdata_i;
-          'h10: ss_1_ctrl_reg          <= wdata_i;
-          'h14: ss_2_ctrl_reg          <= wdata_i;
-          'h18: ss_3_ctrl_reg          <= wdata_i;
-          'h1C: ss_4_ctrl_reg          <= wdata_i;
+          'h8:  icn_ctrl_reg    <= wdata_i;
+          'h10:  ss_irq_en_reg   <= wdata_i;
+          'h14:  ss_clk_en_reg   <= wdata_i;
 
           'h20: ss_ctrl_reserved_1_reg <= wdata_i;
 
@@ -185,11 +158,8 @@ module SS_Ctrl_reg_array #(
           'h4:  rdata_out_reg <= ss_rst_reg;
 
           'h8:  rdata_out_reg <= icn_ctrl_reg;
-          'hC:  rdata_out_reg <= ss_0_ctrl_reg;
-          'h10: rdata_out_reg <= ss_1_ctrl_reg;
-          'h14: rdata_out_reg <= ss_2_ctrl_reg;
-          'h18: rdata_out_reg <= ss_3_ctrl_reg;
-          'h1C: rdata_out_reg <= ss_4_ctrl_reg;
+          'h10:  rdata_out_reg <= ss_irq_en_reg;
+          'h14:  rdata_out_reg <= ss_clk_en_reg;
 
           'h20: rdata_out_reg <= ss_ctrl_reserved_1_reg;
 
@@ -243,17 +213,8 @@ end // comb_logic
 
 assign reset_icn  = ss_rst_reg[0];
 assign reset_ss = ss_rst_reg[NUM_SS:1];
-
-assign irq_en_0    = ss_0_ctrl_reg[31];
-assign ss_ctrl_0   = ss_0_ctrl_reg[SS_CTRL_W-1:0];
-assign irq_en_1    = ss_1_ctrl_reg[31];
-assign ss_ctrl_1   = ss_1_ctrl_reg[SS_CTRL_W-1:0];
-assign irq_en_2    = ss_2_ctrl_reg[31] ;
-assign ss_ctrl_2   = ss_2_ctrl_reg[SS_CTRL_W-1:0];
-assign irq_en_3    = ss_3_ctrl_reg[31];
-assign ss_ctrl_3   = ss_3_ctrl_reg[SS_CTRL_W-1:0];
-assign irq_en_4    = ss_4_ctrl_reg[31];
-assign ss_ctrl_4   = ss_4_ctrl_reg[SS_CTRL_W-1:0];
+assign irq_en_ss    = ss_irq_en_reg[NUM_SS-1:0];
+assign clk_en_ss    = ss_clk_en_reg[NUM_SS-1:0];
 assign ss_ctrl_icn = icn_ctrl_reg[SS_CTRL_W-1:0];
 
 assign pmod_sel = pmod_sel_reg;

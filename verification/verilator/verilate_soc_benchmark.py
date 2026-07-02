@@ -150,6 +150,10 @@ VERILATOR_ARGS = [
     "-Wno-UNOPTFLAT",
     "+define+RVFI",
     "+define+COMMON_CELLS_ASSERTS_OFF",
+    # See verilate.py for why ASSERTS_OFF must also be set (prevents
+    # common_cells/assertions.svh from globally leaking INC_ASSERT into
+    # ibex_ex_block.sv's multdiv SVA idle generate blocks).
+    "+define+ASSERTS_OFF",
     str(VERILATOR_CONFIG_PATH),
 ]
 
@@ -192,8 +196,8 @@ def main() -> int:
         if trace_path.exists():
             with open(trace_path, "r", encoding="utf-8", errors="ignore") as f:
                 for line in f:
-                    if "PA:0x01030100 store:" in line:
-                        idx = line.find("PA:0x01030100 store:")
+                    if "PA:0x01300100 store:" in line:
+                        idx = line.find("PA:0x01300100 store:")
                         val_str = line[idx + 20 :].split()[0]
                         try:
                             val = int(val_str, 16)

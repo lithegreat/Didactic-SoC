@@ -14,151 +14,44 @@
 
 #include <stdint.h>
 
-#define CTRL_BASE 0x01040000
+#define CTRL_BASE 0x01400000
 
 //  note: 0x0 offset controls cpu fetch enable, it is used to disable cpu.
 #define RST_OFFSET      0x4
-#define SS0_CTRL_OFFSET 0xC
-#define SS1_CTRL_OFFSET 0x10
-#define SS2_CTRL_OFFSET 0x14
-#define SS3_CTRL_OFFSET 0x18
-#define SS4_CTRL_OFFSET 0x1C
+#define SS_IRQ_EN_OFFSET 0x10
+#define SS_CLK_EN_OFFSET 0x14
 #define PMOD_OFFSET     0x24
 
 #define RST_CTRL  *( volatile uint32_t* )(CTRL_BASE+RST_OFFSET)
-#define SS0_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS0_CTRL_OFFSET)
-#define SS1_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS1_CTRL_OFFSET)
-#define SS2_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS2_CTRL_OFFSET)
-#define SS3_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS3_CTRL_OFFSET)
-#define SS4_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS4_CTRL_OFFSET)
+#define IRQ_EN_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS_IRQ_EN_OFFSET)
+#define CLK_EN_CTRL  *( volatile uint32_t* )(CTRL_BASE+SS_CLK_EN_OFFSET)
 #define PMOD_CTRL *( volatile uint32_t* )(CTRL_BASE+PMOD_OFFSET)
 
 void ss_init(const uint32_t target_ss){
-  // init: reset + clock enable
-  volatile uint32_t mask = RST_CTRL;
+  // init: clk enable
+  volatile uint32_t mask = CLK_EN_CTRL;
+  //     old value | target ss bit 
+  CLK_EN_CTRL = (mask | 1u<<target_ss );
+  // init: reset
+  mask = RST_CTRL;
   //     old value | target ss bit | icn reset
   RST_CTRL = (mask | 2u<<target_ss | 1u);
-
-  // switch case for clock enabling
-  switch (target_ss)
-  {
-    case 0:
-      mask = SS0_CTRL;
-      SS0_CTRL = (mask | 1u);
-      break;
-    case 1:
-      mask = SS1_CTRL;
-      SS1_CTRL = (mask | 1u);
-      break;
-    case 2:
-      mask = SS2_CTRL;
-      SS2_CTRL = (mask | 1u);
-      break;
-    case 3:
-      mask = SS3_CTRL;
-      SS3_CTRL = (mask | 1u);
-      break;
-    case 4:
-      mask = SS4_CTRL;
-      SS4_CTRL = (mask | 1u);
-      break;
-    default:
-      // error handling
-      asm("nop");
-  }
-
+  // init: irq enable
+  mask = IRQ_EN_CTRL;
+  //     old value | target ss bit 
+  IRQ_EN_CTRL = (mask | 1u<<target_ss );
 }
-
-void ss_init_high_speed(const uint32_t target_ss){
-  // init: reset + clock enable
-  volatile uint32_t mask = RST_CTRL;
-  //     old value | target ss bit | icn reset
-  RST_CTRL = (mask | 2u<<target_ss | 1u);
-
-  // switch case for clock enabling
-  switch (target_ss)
-  {
-    case 0:
-      mask = SS0_CTRL;
-      SS0_CTRL = (mask | 2u);
-      break;
-    case 1:
-      mask = SS1_CTRL;
-      SS1_CTRL = (mask | 2u);
-      break;
-    case 2:
-      mask = SS2_CTRL;
-      SS2_CTRL = (mask | 2u);
-      break;
-    case 3:
-      mask = SS3_CTRL;
-      SS3_CTRL = (mask | 2u);
-      break;
-    case 4:
-      mask = SS4_CTRL;
-      SS4_CTRL = (mask | 2u);
-      break;
-    default:
-      // error handling
-      asm("nop");
-  }
-
-}
-
 
 void ss_reset(const uint32_t target_ss){
-  // reset: reset + clock/high speed clock disabled + irq disabled
+  // reset: reset + clock disabled + irq disabled
   volatile uint32_t mask = 0;
 
-
-  switch (target_ss)
-  {
-    case 0:
-      mask = RST_CTRL;
-      RST_CTRL = mask & ~(2u<<target_ss);
-      mask = SS0_CTRL;
-      SS0_CTRL = (mask & ~(3u));
-      break;
-    case 1:
-      mask = RST_CTRL;
-      RST_CTRL = mask & ~(2u<<target_ss);
-      mask = SS1_CTRL;
-      SS1_CTRL = (mask & ~(3u));
-      break;
-    case 2:
-      mask = RST_CTRL;
-      RST_CTRL = mask & ~(2u<<target_ss);
-      mask = SS2_CTRL;
-      SS2_CTRL = (mask & ~(3u));
-      break;
-    case 3:
-      mask = RST_CTRL;
-      RST_CTRL = mask & ~(2u<<target_ss);
-      mask = SS3_CTRL;
-      SS3_CTRL = (mask & ~(3u));
-      break;
-    case 4:
-      mask = RST_CTRL;
-      RST_CTRL = mask & ~(2u<<target_ss);
-      mask = SS4_CTRL;
-      SS4_CTRL = (mask & ~(3u));
-      break;
-    default:
-      // if targeting other number than specific ss, reset all
-      RST_CTRL = 0u;
-      mask = SS0_CTRL;
-      SS0_CTRL = (mask & ~(3u));
-      mask = SS1_CTRL;
-      SS1_CTRL = (mask & ~(3u));
-      mask = SS2_CTRL;
-      SS2_CTRL = (mask & ~(3u));
-      mask = SS3_CTRL;
-      SS3_CTRL = (mask & ~(3u));
-      mask = SS4_CTRL;
-      SS4_CTRL = (mask & ~(3u));
-      
-  }
-
+  mask = IRQ_EN_CTRL;
+  IRQ_EN_CTRL = (mask & ~(1u<<target_ss));
+  mask = RST_CTRL;
+  RST_CTRL = mask & ~(2u<<target_ss);
+  mask = CLK_EN_CTRL;
+  CLK_EN_CTRL = (mask & ~(1u<<target_ss));
 }
 
 void pmod_target(const uint32_t target_ss){

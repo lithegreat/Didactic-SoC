@@ -57,11 +57,9 @@ module io_cell_wrapper #(
     end
     if (CELL_TYPE == 2) begin: gen_i_cell
       `ifdef FPGA
-        IOBUF i_i_iobuf(
-          .T (1'b1), 
-          .I (FROM_CORE),
+        IBUF i_i_ibuf(
           .O (TO_CORE),
-          .IO(PAD)
+          .I (PAD)
         );
       `else
         i_cell i_i_cell(

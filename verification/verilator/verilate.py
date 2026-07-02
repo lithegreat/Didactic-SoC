@@ -26,12 +26,18 @@ VERILATOR_ARGS = [
     "Didactic",
     "+define+RVFI",
     "+define+COMMON_CELLS_ASSERTS_OFF",
+    # common_cells/include/common_cells/assertions.svh unconditionally defines
+    # INC_ASSERT unless ASSERTS_OFF is set. That macro is global preprocessor
+    # state, so once any common_cells file pulls it in, it also enables the
+    # (otherwise Verilator-guarded) assertion-only SVA idle-signal generate
+    # blocks in vendor_ips/ibex/rtl/ibex_ex_block.sv, which then require the
+    # unbuilt ibex_multdiv_slow module. Disable it explicitly.
+    "+define+ASSERTS_OFF",
     str(VERILATOR_CONFIG_PATH),
 ]
 MANUAL_FILES = [
     # This has to be selected explicitely, otherwise verilator crashes...
-    "./src/rtl/sp_sram.sv",
-    "-I./src/reuse/",
+    "./src/rtl/obi_sram.sv",
     "./.bender/git/checkouts/obi-cbdec09f22f66762/src/obi_xbar.sv",
     "-I./vendor_ips/ibex/vendor/lowrisc_ip/ip/prim_generic/rtl/",
     "-I./vendor_ips/ibex/dv/uvm/core_ibex/common/prim/",
@@ -50,8 +56,15 @@ MANUAL_FILES = [
     "-I./vendor_ips/ibex/vendor/lowrisc_ip/ip/prim/rtl/",
     "-I./vendor_ips/ibex/rtl/",
     "./src/tech_generic/io_cell.sv",
+    # Simulation stand-in for the analog macro (module name TOPCELL_ISAR_with_
+    # padframe != filename, so -I auto-discovery can't find it; must list
+    # explicitly). analog_wrapper_0.v (real ASIC macro instance) pulls this in.
+    "./src/tech_generic/analog_tieoff.v",
     "-I./src/tech_generic/",
     "./.bender/git/checkouts/tech_cells_generic-c6f7639ae8d3c67d/src/rtl/tc_clk.sv",
+    # obi_sram.sv (new SoC memory model, replaces sp_sram) instantiates
+    # tc_sram; list it explicitly (same reasoning as tc_clk.sv above).
+    "./.bender/git/checkouts/tech_cells_generic-c6f7639ae8d3c67d/src/rtl/tc_sram.sv",
     "-I./.bender/git/checkouts/common_cells-3bd5b2d671aaec0e/src/deprecated/",
     "-I./.bender/git/checkouts/riscv-dbg-0a8f5dd79750e659/debug_rom/",
     "./.bender/git/checkouts/common_cells-3bd5b2d671aaec0e/src/cdc_4phase.sv",
@@ -74,14 +87,21 @@ MANUAL_FILES = [
     "-I./vendor_ips/apb_spi_master/",
     "-I./.bender/git/checkouts/apb_gpio-f882c1c8a370562e/rtl/",
     "-I./src/generated/",
-    # Student subsystem bodies. Their module names (tum_ss/imt_ss/dtu_ss/kth_ss)
-    # do not match their file names (*_tieoff.sv), so Verilator cannot
-    # auto-discover them via -I; they must be listed explicitly.
-    "./src/rtl/tum_ss_tieoff.sv",
-    "./src/rtl/imt_ss_tieoff.sv",
-    "./src/rtl/dtu_ss_tieoff.sv",
-    "./src/rtl/kth_ss_tieoff.sv",
-    # Group5 systolic-array AI accelerator (instantiated by tum_ss). Files are
+    # New Didactic-SoC: Kactus2-generated student subsystem wrappers replace the
+    # old *_tieoff.sv files. Each student_wrapper_N.v defines module student_wrapper_N
+    # which instantiates `subsystem`; subsystem.v is our accelerator glue.
+    # Listed explicitly because Verilator can be fragile with mixed .v/.sv via -I.
+    "./src/generated/subsystem.v",
+    "./src/generated/student_wrapper_0.v",
+    "./src/generated/student_wrapper_1.v",
+    "./src/generated/student_wrapper_2.v",
+    "./src/generated/student_wrapper_3.v",
+    "./src/generated/student_wrapper_4.v",
+    "./src/generated/student_wrapper_5.v",
+    "./src/generated/student_wrapper_6.v",
+    # generic_and gate used by student_wrapper IRQ mask logic.
+    "./src/rtl/generic_cells.sv",
+    # Group5 systolic-array AI accelerator (instantiated by subsystem). Files are
     # self-contained and only depend on accel_pkg via the include directory.
     "-I../rtl/include/",
     "../rtl/include/accel_pkg.sv",

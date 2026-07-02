@@ -59,6 +59,10 @@ VERILATOR_ARGS = [
     "-Wno-UNOPTFLAT",
     "+define+RVFI",
     "+define+COMMON_CELLS_ASSERTS_OFF",
+    # See verilate.py for why ASSERTS_OFF must also be set (prevents
+    # common_cells/assertions.svh from globally leaking INC_ASSERT into
+    # ibex_ex_block.sv's multdiv SVA idle generate blocks).
+    "+define+ASSERTS_OFF",
     str(VERILATOR_CONFIG_PATH),
 ]
 

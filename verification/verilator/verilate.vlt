@@ -45,6 +45,19 @@ lint_off -rule UNOPTFLAT -file ".bender/git/checkouts/common_cells-3bd5b2d671aae
 lint_off -rule UNOPTFLAT -file ".bender/git/checkouts/apb-e4460f86c75afc6a/src/apb_intf.sv" -match "*"
 lint_off -rule PINMISSING -file "src/generated/SysCtrl_SS_wrapper_0.v" -match "*"
 
+// New Didactic-SoC pad-ring (Kactus2-generated io_cell_frame_sysctrl.sv): the
+// generic io_cell_wrapper PAD port is inout, but several pad-facing ports
+// (clk_in/jtag_*/uart_rx/reset) are declared plain `input wire` at this level
+// since they are logically input-only pins. Verilator flags the resulting
+// inout->input connection as ASSIGNIN; benign for simulation (input pads are
+// only ever driven from the testbench/top, never internally).
+lint_off -rule ASSIGNIN -file "src/rtl/io_cell_frame_sysctrl.sv" -match "*"
+
+// tc_sram.sv (tech_cells_generic) case-selects on the string parameter
+// SimInit; benign width mismatch flagged by Verilator.
+lint_off -rule WIDTHEXPAND -file ".bender/git/checkouts/tech_cells_generic-c6f7639ae8d3c67d/src/rtl/tc_sram.sv" -match "*"
+lint_off -rule UNSIGNED -file ".bender/git/checkouts/tech_cells_generic-c6f7639ae8d3c67d/src/rtl/tc_sram.sv" -match "*"
+
 // Group5 systolic-array AI accelerator (instantiated via tum_ss). Benign
 // width/sign lint waivers; arithmetic is intentional and verified in the
 // standalone testbench (sim/testbenches/tb_accel.sv).

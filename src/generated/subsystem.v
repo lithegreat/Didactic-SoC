@@ -43,10 +43,30 @@ module subsystem #(
 
 // WARNING: EVERYTHING ON AND ABOVE THIS LINE MAY BE OVERWRITTEN BY KACTUS2!!!
 
-    assign PRDATA = '0;
-    assign PREADY = 1;
-    assign PSLVERR = 0;
-    assign irq = 0;
+    // Migration to new Didactic-SoC (2026):
+    //   * clk_in -> clk         (new SoC port name; directly connected)
+    //   * reset_int -> reset_n  (SoC now provides active-low; invert for accel)
+    //   * irq_en_X -> irq_en    (slot-index suffix removed)
+    //   * irq_X -> irq          (slot-index suffix removed)
+    //   * ss_ctrl_X removed     (tied to 0 internally)
+    //   * PADDR 32->16 bits     (SoC wrapper already strips upper index bits;
+    //                            accelerator uses [9:0], so pass all 16 bits)
+    accelerator_top i_accelerator_top (
+        .clk_in    (clk),
+        .reset_int (~reset_n),
+        .PADDR     (PADDR[9:0]),
+        .PSEL      (PSEL),
+        .PENABLE   (PENABLE),
+        .PWRITE    (PWRITE),
+        .PWDATA    (PWDATA),
+        .PRDATA    (PRDATA),
+        .PREADY    (PREADY),
+        .PSLVERR   (PSLVERR),
+        .irq_en_4  (irq_en),
+        .ss_ctrl_4 (8'b0),
+        .irq_4     (irq)
+    );
+
     assign pmod_gpio_oe = '0;
     assign pmod_gpo = '0;
 

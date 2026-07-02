@@ -41,6 +41,7 @@ sources:
       - vendor_ips/ibex/rtl/ibex_controller.sv
       - vendor_ips/ibex/rtl/ibex_cs_registers.sv
       - vendor_ips/ibex/rtl/ibex_pmp.sv
+      - vendor_ips/ibex/rtl/ibex_dummy_instr.sv
       - vendor_ips/ibex/rtl/ibex_if_stage.sv
       - vendor_ips/ibex/rtl/ibex_id_stage.sv
       - vendor_ips/ibex/rtl/ibex_load_store_unit.sv
@@ -169,6 +170,7 @@ vendor_package:
       - "rtl/ibex_controller.sv"
       - "rtl/ibex_cs_registers.sv"
       - "rtl/ibex_pmp.sv"
+      - "rtl/ibex_dummy_instr.sv"
       - "rtl/ibex_if_stage.sv"
       - "rtl/ibex_id_stage.sv"
       - "rtl/ibex_load_store_unit.sv"

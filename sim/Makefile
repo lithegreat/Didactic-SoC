@@ -27,6 +27,7 @@ TB_DEFINES = \
 DUT_DEFINES = \
 	+define+RVFI \
 	+define+INC_ASSERT \
+	+define+COMMON_CELLS_ASSERTS_OFF \
 #	+define+SYNTHESIS \
 
 DUT_LIBS = \
@@ -57,6 +58,10 @@ APB_DIR          ?= $(shell $(BENDER) path apb)
 REGIF_DIR        ?= $(shell $(BENDER) path register_interface)
 OBI_DIR          ?= $(shell $(BENDER) path obi)
 IBEX_DIR         ?= $(BUILD_DIR)/../vendor_ips/ibex
+# bender script flist emits NO +incdir lines at all (Bender.yml include_dirs is
+# ignored in flist mode), so the accel rtl/include dir (needed for `include
+# "accel_pkg.sv"`) must be added here explicitly.
+ACCEL_INC_DIR    ?= $(BUILD_DIR)/../../rtl/include
 
 SIM_FLIST        ?= $(shell $(BENDER) script flist -t rtl -t vendor -t simulation -t tracer -t didactic_obi)
 
@@ -68,7 +73,8 @@ INCLUDES ?= \
 	+incdir+$(OBI_DIR)/include \
 	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/dv/sv/dv_utils \
 	+incdir+$(IBEX_DIR)/vendor/lowrisc_ip/ip/prim/rtl \
-	+incdir+$(IBEX_DIR)/rtl
+	+incdir+$(IBEX_DIR)/rtl \
+	+incdir+$(ACCEL_INC_DIR)
 
 env:
 	mkdir -p $(BUILD_DIR)/logs/compile
@@ -99,6 +105,9 @@ elaborate: library_mapping
 	-o $(DUT)_opt \
 	-l $(BUILD_DIR)/logs/opt/$(START_TIME)_vopt.log
 
+# GUI-friendly default is a no-op headlessly ('run 0ms;' never advances and
+# never quits) -- override for headless runs, e.g. RUN_CMD="run -all; quit -f".
+RUN_CMD ?= run 0ms;
 run_sim: library_mapping
 	mkdir -p stdout &&	touch stdout/uart
 	cd $(BUILD_DIR)
@@ -107,5 +116,5 @@ run_sim: library_mapping
 	+TESTCASE=$(TESTCASE) \
 	-work $(BUILD_DIR)/didactic_lib \
 	$(DUT)_opt \
-	-do "run 0ms;" \
+	-do "$(RUN_CMD)" \
 	-l $(BUILD_DIR)/logs/sim/$(START_TIME)_sim.log

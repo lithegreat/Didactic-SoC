@@ -13,7 +13,7 @@
  *      sim/common/c_code/gen_accel_data.py and reproduce the RTL's signed,
  *      32-bit-wrapping accumulation bit-for-bit.
  * Notes:
- *    - Accelerator APB window base = 0x0105_1000 (ICN_SS idx 1 = tum_ss).
+ *    - Accelerator APB window base = 0x0151_0000 (new SoC: slot 1 = tum_ss).
  *    - Internal address decode uses PADDR[9:8]:
  *        00 -> matrix_buffer_ab  (A @ 0x00, B @ 0x40, CTRL @ 0x80)
  *        01 -> control_unit      (regmap @ 0x100)

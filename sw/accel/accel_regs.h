@@ -4,8 +4,11 @@
 #include <stdint.h>
 
 // TUM subsystem slot index and accelerator APB base address.
+// New Didactic-SoC address map: 0x015X_0000 with X = slot index (1-7).
+// Slot 1 (TUM group5) -> 0x0151_0000; the ICN strips the upper prefix,
+// so the 16-bit PADDR reaching accelerator_top starts at 0x0000.
 #define ACCEL_SS 1
-#define ACCEL_BASE 0x01051000u
+#define ACCEL_BASE 0x01510000u
 
 #define ACCEL_REG32(addr) (*(volatile uint32_t *)(addr))
 

@@ -57,6 +57,14 @@ VERILATOR_ARGS = [
     # harmless here (the simulator still converges), so silence it to keep the
     # build portable across Verilator versions on the CI runner.
     "-Wno-UNOPTFLAT",
+    # tc_sram.sv uses {DataWidth{$urandom()}} for init randomisation; the width
+    # truncation (1024->32 bits) is intentional in that context (WIDTHTRUNC).
+    # tc_clk.sv uses a non-blocking '<=' in a combinational always block for the
+    # clock-enable path (COMBDLY); it is a known pattern in tech_cells_generic
+    # and is harmless in simulation.  Both files are third-party vendor IP that
+    # we cannot modify, so suppress the warnings here.
+    "-Wno-WIDTHTRUNC",
+    "-Wno-COMBDLY",
     "+define+RVFI",
     "+define+COMMON_CELLS_ASSERTS_OFF",
     # See verilate.py for why ASSERTS_OFF must also be set (prevents

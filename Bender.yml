@@ -124,7 +124,21 @@ sources:
     - src/tb/spi/if_spi_slave.sv
     - src/tb/jtag/jtag_pkg.sv
     - src/tb/tb_didactic.sv
-  
+
+  # FPGA has no real tech-cell library to link against for these generic-RTL
+  # stand-ins (unlike ASIC synthesis, which links the actual analog macro /
+  # standard-cell synchronizer / IO pad elsewhere). The fpga flow's
+  # run_xilinx.tcl always passes -t synthesis, which excludes the block above
+  # (tagged not(synthesis)), so re-add the generic stubs needed for the fpga tag:
+  # analog_tieoff (TOPCELL_ISAR_with_padframe stub), tech_sync (used by
+  # ibex_wrapper.sv), io_cell (instantiated by io_cell_wrapper.sv, which is
+  # already added separately above for all(xilinx,fpga,synthesis)).
+  - target: fpga
+    files:
+    - src/tech_generic/analog_tieoff.v
+    - src/tech_generic/tech_sync.sv
+    - src/tech_generic/io_cell.sv
+
   - target: all(rtl, not(black_box))
     files: 
     - src/generated/subsystem.v

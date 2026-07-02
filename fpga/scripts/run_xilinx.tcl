@@ -20,6 +20,8 @@ if { $PROJECT eq "z1" } {
   puts "ERROR: VCU118 constraints are empty"
 } elseif { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag"} {
   set XILINX_PART xc7a35tcpg236-1
+} elseif { $PROJECT eq "a7" } {
+  set XILINX_PART xc7a100tcsg324-1
 } else {
   puts "PROJECT variable contains unsupported board!"
   break
@@ -65,6 +67,9 @@ if { $PROJECT eq "z1" } {
 if { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag" } {
   add_files -norecurse $DIR/rtl/DidacticBasys3.v
 }
+if { $PROJECT eq "a7" } {
+  add_files -norecurse $DIR/rtl/DidacticA7.v
+}
 
 set_property file_type SystemVerilog [get_files *.v]
 
@@ -87,6 +92,8 @@ if { $PROJECT eq "z1" } {
   set_property top DidacticZ1 [current_fileset]
 } elseif { $PROJECT eq "basys3" || $PROJECT eq "basys3_vjtag" } {
   set_property top DidacticBasys3 [current_fileset]
+} elseif { $PROJECT eq "a7" } {
+  set_property top DidacticA7 [current_fileset]
 } else {
   set_property top Didactic [current_fileset]
 }

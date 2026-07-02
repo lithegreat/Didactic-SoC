@@ -25,10 +25,8 @@ module tb_didactic();
 /////////////////////////////
 // parameters 
 ////////////////////////////////
-  parameter DM_SANITY_TESTCASES = 1;
-
   // default paths
-  parameter string TESTCASE = "blink";
+  string TESTCASE = "blink";
   parameter string HEX_LOCATION = "../build/sw/";
 
   parameter BAUDRATE = 115200;
@@ -47,6 +45,7 @@ module tb_didactic();
   // imem offset h_0000
   // binary offset h80
   logic [31:0] begin_imem = 32'h0100_0000;
+  logic [31:0] begin_dmem = 32'h0110_0000;
   logic [31:0] boot_addr  = begin_imem +'h80;
 
   int   exit_status = `EXIT_ERROR; // default
@@ -128,40 +127,53 @@ module tb_didactic();
     forever clk = #(`CLK_PERIOD/2) ~clk;
   end
 
-`ifdef ACTIVE_FAST_CLK
-  initial
-  begin
-    #(`FAST_CLK_PERIOD/2);
-    fast_clk = 1'b1;
-    forever fast_clk = #(`FAST_CLK_PERIOD/2) ~fast_clk;
+/////////////////////////////
+// FSDB dump
+////////////////////////////////
+
+  logic dump_fsdb;  
+  initial begin
+    if (!$value$plusargs ("DUMP_FSDB=%s", dump_fsdb)) dump_fsdb = 0;
+    if (dump_fsdb) begin
+      $fsdbDumpvars(0, tb_didactic.i_didactic);
+      $fsdbDumpon;
+    end
   end
-`endif
+
+
 /////////////////////////////
 // TB behavioral
 ////////////////////////////////
   initial
   begin
+    // allow overriding TESTCASE via plusarg: +TESTCASE=<name>
+    string _plus;
+    if ($value$plusargs("TESTCASE=%s", _plus)) begin
+      TESTCASE = _plus;
+      $display("[TB] TESTCASE overridden via plusarg: %s", TESTCASE);
+    end
     //asserting global reset
     reset = 1'b0;
-    $display("[TB] Time %g ns - Reset on, start wait 3ms", $time);
-    #3ms;
+    $display("[TB] Time %g ns - Reset on, start wait 10us", $time);
+    #10us;
 
     $display("[TB] Time %g ns - Reset is about to be lifted", $time);
+    #1337ps
     reset = 1'b1;
 
     $display("[TB] Time %g ns - Reset lift", $time);
-    #3ms;
+    #10us;
 
-    $display("[TB] Time %g ns - execute for 3ms", $time);
+    $display("[TB] Time %g ns - execute for 10us", $time);
 
     // light testing jtag features
     jtag_pkg::jtag_reset      (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
     jtag_pkg::jtag_softreset  (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
-    #5us;
+    #1us;
     jtag_pkg::jtag_bypass_test(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-    #5us;
+    #1us;
     jtag_pkg::jtag_get_idcode (jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-    #5us;
+    #1us;
     
     // init
     test_mode_if.init(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
@@ -177,76 +189,51 @@ module tb_didactic();
     $display("[TB] Time %g ns - Writing the boot address into dpc", $time);
     debug_mode_if.write_reg_abstract_cmd(riscv::CSR_DPC, boot_addr, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
 
-
-
-    if(DM_SANITY_TESTCASES == 1) begin
-
-
-      debug_mode_if.run_dm_tests(FC_CORE_ID, boot_addr, error, num_err, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-       
-      // check DM test status
-      if (num_err == 0) begin
-        exit_status = `EXIT_SUCCESS;
-        $display("[TB] Time %g ns -  All Debug module tests Success", $time);
-      end else begin
-        exit_status = `EXIT_FAIL;
-        $error("[TB] Time %g ns - FAILURE: %d Debug Module tests failed", $time, num_err);
-      end
-      $stop;
-
-
-    end
-    else if (DM_SANITY_TESTCASES == 0) begin
-    
     // program load & execute
+    $readmemh({HEX_LOCATION,TESTCASE,".imem.hex"}, stimuli);
+    // start program upload
+    debug_mode_if.load_L2(num_stim, begin_imem, stimuli, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
+    stimuli = '{default:'x}; // Reset stimuli to all X after loading IMEM
 
-      $readmemh({HEX_LOCATION,TESTCASE,".hex"}, stimuli);
+    $readmemh({HEX_LOCATION,TESTCASE,".dmem.hex"}, stimuli);
+    // start program upload
+    debug_mode_if.load_L2(num_stim, begin_dmem, stimuli, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
 
-      // start program upload
-      debug_mode_if.load_L2(num_stim, begin_imem, stimuli, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-    
+    debug_mode_if.init_dmi_access(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
+    // we have set dpc and loaded the binary, we can go now
+    $display("[TB] Time %g ns - Resuming the CORE", $time);
+    debug_mode_if.resume_harts(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
 
-      debug_mode_if.init_dmi_access(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
-      // we have set dpc and loaded the binary, we can go now
-      $display("[TB] Time %g ns - Resuming the CORE", $time);
-      debug_mode_if.resume_harts(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
+    //-------------------------------Wait sysctrl program finish-----------------------
+    debug_mode_if.init_dmi_access(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
+    // enable sb access for subsequent readMem calls
+    debug_mode_if.set_sbreadonaddr(1'b1, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
+    // wait for end of computation signal
+    $display("[TB] Time %g ns - Waiting for end of computation", $time);
 
-      //-------------------------------Wait sysctrl program finish-----------------------
-      debug_mode_if.init_dmi_access(jtag_tck, jtag_tms, jtag_trstn, jtag_tdi);
-      // enable sb access for subsequent readMem calls
-      debug_mode_if.set_sbreadonaddr(1'b1, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-      // wait for end of computation signal
-      $display("[TB] Time %g ns - Waiting for end of computation", $time);
+    jtag_data = 0;
 
-      jtag_data = 0;
-
-      // poll
-      while(jtag_data[31] == 0) begin
-        // todo: wire core status register
-        debug_mode_if.readMem(32'h01020380, jtag_data, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
-        #100us;
-      end
-
-      // Check exit status
-      if (jtag_data[30:0] == 0) begin
-        exit_status = `EXIT_SUCCESS;
-        $display("[TB] Time %g ns - JTAG RETURN OK: Received status core: 0x%h", $time, jtag_data[30:0]);
-      end
-      else begin
-        exit_status = `EXIT_FAIL;
-        $display("[TB] Time %g ns - JTAG RETURN FAILURE: core status: 0x%h", $time, jtag_data[30:0]);
-      end
-      #1ms;//wait to get prints etc out of the tb
-      $stop;
-
-
+    // poll
+    while(jtag_data[31] == 0) begin
+      // todo: wire core status register
+      debug_mode_if.readMem(32'h01200380, jtag_data, jtag_tck, jtag_tms, jtag_trstn, jtag_tdi, jtag_tdo);
+      #100us;
     end
 
-    #1ms;//wait to get prints etc out of the tb
-
+    // Check exit status
+    if (jtag_data[30:0] == 0) begin
+      exit_status = `EXIT_SUCCESS;
+      $display("[TB] Time %g ns - JTAG RETURN OK: Received status core: 0x%h", $time, jtag_data[30:0]);
+    end
+    else begin
+      exit_status = `EXIT_FAIL;
+      $display("[TB] Time %g ns - JTAG RETURN FAILURE: core status: 0x%h", $time, jtag_data[30:0]);
+    end
+    #3ms;//wait to get prints etc out of the tb
     $stop;
-
   end
+
+
 /////////////////////////////////////////////////////
 // dut
 /////////////////////////////////////////////////////
@@ -268,7 +255,7 @@ module tb_didactic();
     .jtag_tms(dut_jtag_tms),
     .jtag_trst(dut_jtag_trstn),
     // Interface: Reset
-    .reset(dut_reset),
+    .reset_n(dut_reset),
     // Interface: SPI
     .spi_csn({dut_spi_csn1,dut_spi_csn0}),
     .spi_data({dut_spi_data3, dut_spi_data2, dut_spi_data1, dut_spi_data0}),

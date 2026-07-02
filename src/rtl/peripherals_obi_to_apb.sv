@@ -100,7 +100,7 @@ module peripherals_obi_to_apb #(
     int unsigned end_addr;
   } addr_rule_t;
 
-  localparam ADDR_BASE   = 32'h0103_0000;
+  localparam ADDR_BASE   = 32'h0130_0000;
   localparam APB_SIZE    = 'h100;
 
   addr_rule_t [TARGETS-1:0] peripheral_addr_map;

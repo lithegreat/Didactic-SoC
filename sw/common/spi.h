@@ -14,7 +14,7 @@
 
 #include <stdint.h>
 
-#define SPI_BASE 0x01030200
+#define SPI_BASE 0x01300200
 
 #define STATUS *(uint32_t*)(SPI_BASE + 0x00u)
 #define CLKDIV *(uint32_t*)(SPI_BASE + 0x04u)
@@ -27,7 +27,7 @@
 #define INTCFG *(uint32_t*)(SPI_BASE + 0x24u)
 #define INTSTA *(uint32_t*)(SPI_BASE + 0x28u)
 
-#define CTRL_BASE 0x01040000
+#define CTRL_BASE 0x01400000
 #define SPI_PAD_CFG_DATA0 *(uint32_t*)(CTRL_BASE + 0x3C)
 #define SPI_PAD_CFG_DATA1 *(uint32_t*)(CTRL_BASE + 0x40)
 #define SPI_PAD_CFG_DATA2 *(uint32_t*)(CTRL_BASE + 0x44)

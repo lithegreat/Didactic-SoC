@@ -13,22 +13,22 @@
 
 #include <stdint.h>
 
-#define PERIPH_BASE 0x01030100
+#define PERIPH_BASE 0x01300000
 #define UART_OFFSET 0x100
 
-#define RBR_THR_DLL *( volatile uint32_t* )(0x01030100)
-#define IER_DLM     *( volatile uint32_t* )(0x01030104)
-#define IIR_FCR     *( volatile uint32_t* )(0x01030108)
-#define LCR         *( volatile uint32_t* )(0x0103010C)
-#define MCR         *( volatile uint32_t* )(0x01030110)
-#define LSR         *( volatile uint32_t* )(0x01030114)
-#define MSR         *( volatile uint32_t* )(0x01030118)
-#define SCR         *( volatile uint32_t* )(0x0103011C)
+#define RBR_THR_DLL *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x00)
+#define IER_DLM     *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x04)
+#define IIR_FCR     *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x08)
+#define LCR         *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x0C)
+#define MCR         *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x10)
+#define LSR         *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x14)
+#define MSR         *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x18)
+#define SCR         *( volatile uint32_t* )(PERIPH_BASE + UART_OFFSET + 0x1C)
 
 void uart_init(){
   // configure rx io cell
-  volatile uint32_t temp =   *( volatile uint32_t* )(0x01040028);
-  *( volatile uint32_t* )(0x01040028) = (temp | 3u);
+  volatile uint32_t temp =   *( volatile uint32_t* )(0x01400028);
+  *( volatile uint32_t* )(0x01400028) = (temp | 3u);
 
 
   // init uart settings (for typical tx/rx setup)

@@ -351,7 +351,7 @@ module sysctrl_obi_xbar #(
   end
 
   localparam ADDR_BASE   = 32'h0100_0000;
-  localparam TARGET_SIZE = 'h1_0000;
+  localparam TARGET_SIZE = 32'h0010_0000;
 
   typedef struct packed {
     int unsigned idx;

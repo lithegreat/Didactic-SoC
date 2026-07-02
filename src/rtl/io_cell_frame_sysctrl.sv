@@ -18,7 +18,7 @@
 
 module io_cell_frame_sysctrl #(
     parameter IOCELL_CFG_W = 5,
-    // count and modify according to cells
+    // count and modify according to cells, includes GPIO cells
     parameter IOCELL_COUNT = 26,
     parameter NUM_GPIO = 8
   )(
@@ -27,8 +27,7 @@ module io_cell_frame_sysctrl #(
     input  logic [(IOCELL_CFG_W*IOCELL_COUNT)-1:0] cell_cfg,
 
     // Interface: Clock
-    inout  wire        clk_in,
-    inout  wire        clk_out,
+    input  wire        clk_in,
 
     // Interface: Clock_internal
     output logic       clk_internal,
@@ -41,11 +40,11 @@ module io_cell_frame_sysctrl #(
     output logic [NUM_GPIO-1:0] gpio_to_core,
 
     // Interface: JTAG
-    inout  wire        jtag_tck,
-    inout  wire        jtag_tdi,
-    inout  wire        jtag_tdo,
-    inout  wire        jtag_tms,
-    inout  wire        jtag_trst,
+    input  wire        jtag_tck,
+    input  wire        jtag_tdi,
+    output wire        jtag_tdo,
+    input  wire        jtag_tms,
+    input  wire        jtag_trst,
 
     // Interface: JTAG_internal
     input  logic       jtag_tdo_internal,
@@ -55,15 +54,15 @@ module io_cell_frame_sysctrl #(
     output logic       jtag_trst_internal,
 
     // Interface: Reset
-    inout  wire        reset,
+    input  wire        reset,
 
     // Interface: Reset_internal
     output logic       reset_internal,
 
     // Interface: SPI
-    inout  wire  [1:0] spi_csn,
+    output wire  [1:0] spi_csn,
     inout  wire  [3:0] spi_data,
-    inout  wire        spi_sck,
+    output wire        spi_sck,
 
     // Interface: SPI_internal
     input  logic [1:0] spim_csn_internal,
@@ -72,8 +71,8 @@ module io_cell_frame_sysctrl #(
     output logic [3:0] spim_miso_internal,
 
     // Interface: UART
-    inout  wire        uart_rx,
-    inout  wire        uart_tx,
+    input  wire        uart_rx,
+    output wire        uart_tx,
 
     // Interface: UART_internal
     input  logic       uart_tx_internal,
@@ -86,7 +85,7 @@ module io_cell_frame_sysctrl #(
   io_cell_wrapper#(.CELL_TYPE(2), .IOCELL_CFG_W(IOCELL_CFG_W)) i_io_cell_rst(.FROM_CORE(1'b0), .TO_CORE(reset_internal), .PAD(reset), .io_cell_cfg(IOCELL_CFG_W'('hE)));
   // clk
 `ifndef FPGA
-  io_cell_wrapper#(.CELL_TYPE(2), .IOCELL_CFG_W(IOCELL_CFG_W)) i_io_cell_clk(.FROM_CORE(1'b0), .TO_CORE(clk_internal), .PAD(clk_in), .io_cell_cfg(IOCELL_CFG_W'('hE)));
+  io_cell_wrapper#(.CELL_TYPE(2), .IOCELL_CFG_W(IOCELL_CFG_W)) i_global_clk_cell (.FROM_CORE(1'b0), .TO_CORE(clk_internal),  .PAD(clk_in),  .io_cell_cfg(IOCELL_CFG_W'('hF)));
 `else
   assign clk_internal = clk_in;
 `endif
@@ -121,7 +120,7 @@ module io_cell_frame_sysctrl #(
         .FROM_CORE  (gpio_from_core[i]),
         .TO_CORE    (gpio_to_core[i]),
         .PAD        (gpio[i]),
-        .io_cell_cfg(cell_cfg[((9+i)*IOCELL_CFG_W)+:IOCELL_CFG_W])
+        .io_cell_cfg(cell_cfg[((IOCELL_COUNT-NUM_GPIO+i)*IOCELL_CFG_W)+:IOCELL_CFG_W])
       );
   end
 

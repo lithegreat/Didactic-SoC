@@ -91,7 +91,11 @@ MANUAL_FILES = [
     # old *_tieoff.sv files. Each student_wrapper_N.v defines module student_wrapper_N
     # which instantiates `subsystem`; subsystem.v is our accelerator glue.
     # Listed explicitly because Verilator can be fragile with mixed .v/.sv via -I.
+    # Only slot 1 (student_wrapper_0) instantiates the real `subsystem`
+    # (accelerator); slots 2-7 (student_wrapper_1..6) instantiate the
+    # subsystem_tieoff stub so the accelerator isn't replicated 7x.
     "./src/generated/subsystem.v",
+    "./src/tech_generic/subsystem_tieoff.v",
     "./src/generated/student_wrapper_0.v",
     "./src/generated/student_wrapper_1.v",
     "./src/generated/student_wrapper_2.v",

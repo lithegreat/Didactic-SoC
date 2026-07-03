@@ -151,7 +151,10 @@ module student_wrapper_6 #(
         .test_en_i         (1'b0));
 
     // IP-XACT VLNV: tuni.fi:subsystem:subsystem:1.0
-    subsystem i_subsystem_6(
+    // NOTE: this slot does not carry the Group5 accelerator (only slot 1 /
+    // student_wrapper_0 does); instantiate the tieoff stub instead so the
+    // accelerator is not replicated into every student_wrapper slot.
+    subsystem_tieoff i_subsystem_6(
         // Interface: APB
         .PADDR               (i_subsystem_PADDR),
         .PENABLE             (i_subsystem_PENABLE),

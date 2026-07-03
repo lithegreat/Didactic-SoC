@@ -10,7 +10,7 @@
 // whose XML file is /home/genp/work/msmcd-fe-lab/Didactic-SoC/ipxact/tuni.fi/subsystem/submodule/1.0/submodule.xml
 //-----------------------------------------------------------------------------
 
-module subsystem #(
+module subsystem_tieoff #(
     parameter                              NUM_GPIO         = 16,
     parameter                              APB_AW           = 16,
     parameter                              APB_DW           = 32
@@ -40,5 +40,18 @@ module subsystem #(
     input                               irq_en,
     input                               reset_n
 );
+
+// WARNING: EVERYTHING ON AND ABOVE THIS LINE MAY BE OVERWRITTEN BY KACTUS2!!!
+
+    // Unused slot stub: only one physical slot carries the real
+    // `subsystem` (Group5 accelerator); all other student_wrapper slots
+    // instantiate this tieoff instead so the accelerator is not replicated
+    // into every slot. All outputs are driven inactive.
+    assign PRDATA       = '0;
+    assign PREADY       = 1'b1;
+    assign PSLVERR      = 1'b0;
+    assign irq          = 1'b0;
+    assign pmod_gpio_oe = '0;
+    assign pmod_gpo     = '0;
 
 endmodule

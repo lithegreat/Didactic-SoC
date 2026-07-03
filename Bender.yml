@@ -143,8 +143,12 @@ sources:
     files: 
     - src/generated/subsystem.v
 
-  - target: all(rtl, black_box)
-    files: 
+  # subsystem_tieoff fills the student_wrapper slots that do NOT carry the
+  # Group5 accelerator (only slot 1 / student_wrapper_0 instantiates the real
+  # `subsystem`). Always compiled alongside subsystem.v so slots 2-7 don't
+  # each replicate the accelerator.
+  - target: rtl
+    files:
     - src/tech_generic/subsystem_tieoff.v
 
 vendor_package:

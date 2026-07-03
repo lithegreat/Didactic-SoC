@@ -51,7 +51,26 @@ module subsystem #(
     //   * ss_ctrl_X removed     (tied to 0 internally)
     //   * PADDR 32->16 bits     (SoC wrapper already strips upper index bits;
     //                            accelerator uses [9:0], so pass all 16 bits)
-    accelerator_top i_accelerator_top (
+    //
+    // Physical systolic-array dimension (M = N = K). Override at synthesis
+    // time with +define+ACCEL_DIM=8 (e.g. `ACCEL_DIM=8 make all_xilinx`) to
+    // fit smaller FPGAs; defaults to 16 to match the standalone testbench.
+`ifndef ACCEL_DIM
+  `define ACCEL_DIM 16
+`endif
+
+    // Element bit-width. INT8 is the baseline; override at compile time with
+    // +define+ACCEL_DATA_W=16 for a wider datapath.
+`ifndef ACCEL_DATA_W
+  `define ACCEL_DATA_W 8
+`endif
+
+    accelerator_top #(
+        .DATA_W (`ACCEL_DATA_W),
+        .M      (`ACCEL_DIM),
+        .N      (`ACCEL_DIM),
+        .K      (`ACCEL_DIM)
+    ) i_accelerator_top (
         .clk_in    (clk),
         .reset_int (~reset_n),
         .PADDR     (PADDR[9:0]),

@@ -125,6 +125,7 @@ define _bench_run
 	$(MAKE) -C sw PREFIX=$(BENCH_CC_PREFIX) TESTCASE=benchmark TEST=benchmark \
 		CFLAGS="$(BENCH_CFLAGS_BASE) -DACC_DIM=$(1) $(2)" test
 	cp build/sw/benchmark.imem.hex verification/verilator/benchmark.hex
+	$(BENCH_CC_PREFIX)-nm build/sw/benchmark.elf > verification/verilator/benchmark.syms
 	@python3 ./verification/verilator/verilate_soc_benchmark.py
 endef
 

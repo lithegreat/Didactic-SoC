@@ -39,12 +39,29 @@ TB_FILE = VERILATOR_DIR / "src" / "soc_accel" / "tb_soc_accel.sv"
 _default_elf = Path(__file__).parent.parent.parent / "build" / "sw" / "benchmark.elf"
 ELF_FILE = Path(os.environ.get("BENCH_ELF", str(_default_elf)))
 
+# Committed nm-format symbol map, checked in next to benchmark.hex. CI runners
+# only check out the prebuilt hex (no ELF, no RISC-V toolchain), so the
+# wall-clock breakdown reads symbol addresses from this file. Regenerated
+# together with benchmark.hex by `make verilate_benchmark_*`
+# (see Didactic-SoC/Makefile, the _bench_run macro).
+_default_syms = VERILATOR_DIR / "benchmark.syms"
+SYMS_FILE = Path(os.environ.get("BENCH_SYMS", str(_default_syms)))
 
-def _nm_symbols(elf: Path) -> dict:
-    """Return {name: address} for all text/data symbols in *elf*."""
-    out = sp.check_output(["nm", str(elf)], text=True, stderr=sp.DEVNULL)
+
+def _load_symbols(elf: Path, syms_file: Path) -> dict:
+    """Return {name: address} for text/data symbols.
+
+    Prefers a committed nm-format *syms_file* (available on CI); falls back to
+    running ``nm`` on *elf* for local firmware rebuilds where the ELF exists.
+    """
+    if syms_file.exists():
+        text = syms_file.read_text()
+    elif elf.exists():
+        text = sp.check_output(["nm", str(elf)], text=True, stderr=sp.DEVNULL)
+    else:
+        return {}
     syms = {}
-    for line in out.splitlines():
+    for line in text.splitlines():
         parts = line.split()
         if len(parts) >= 3:
             try:
@@ -54,7 +71,7 @@ def _nm_symbols(elf: Path) -> dict:
     return syms
 
 
-def _parse_wall_cycles(trace_path: Path, elf: Path):
+def _parse_wall_cycles(trace_path: Path, elf: Path, syms_file: Path):
     """
     Parse the Ibex instruction trace to obtain wall-clock cycle counts for:
 
@@ -66,10 +83,12 @@ def _parse_wall_cycles(trace_path: Path, elf: Path):
 
     Returns (cpu_cyc, accel_cyc) or (0, 0) on parse failure.
     """
-    if not trace_path.exists() or not elf.exists():
+    if not trace_path.exists():
         return 0, 0
 
-    syms = _nm_symbols(elf)
+    syms = _load_symbols(elf, syms_file)
+    if not syms:
+        return 0, 0
     main_addr        = syms.get("main", 0)
     tiled_addr       = syms.get("accel_run_tiled_gemm", 0)
     cpu_out_base     = syms.get("cpu_out.0", 0)
@@ -228,7 +247,7 @@ def main() -> int:
                     hw_bus_cyc = int(m.group(1))
 
         # Wall-clock cycle analysis from the Ibex instruction trace
-        cpu_cyc, accel_cyc = _parse_wall_cycles(trace_path, ELF_FILE)
+        cpu_cyc, accel_cyc = _parse_wall_cycles(trace_path, ELF_FILE, SYMS_FILE)
         if cpu_cyc and accel_cyc:
             sx = cpu_cyc / accel_cyc
             hw_total = hw_compute_cyc + hw_bus_cyc

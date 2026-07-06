@@ -124,7 +124,7 @@ BENCH_CFLAGS_BASE = -O2 -g -ffunction-sections -fdata-sections -Icommon/
 define _bench_run
 	$(MAKE) -C sw PREFIX=$(BENCH_CC_PREFIX) TESTCASE=benchmark TEST=benchmark \
 		CFLAGS="$(BENCH_CFLAGS_BASE) -DACC_DIM=$(1) $(2)" test
-	cp build/sw/benchmark.hex verification/verilator/benchmark.hex
+	cp build/sw/benchmark.imem.hex verification/verilator/benchmark.hex
 	@python3 ./verification/verilator/verilate_soc_benchmark.py
 endef
 

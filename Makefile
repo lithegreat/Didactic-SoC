@@ -130,6 +130,7 @@ define _bench_run
 endef
 
 .PHONY: verilate_benchmark verilate_benchmark_16 verilate_benchmark_8
+.PHONY: verilate_benchmark_tiled_single verilate_benchmark_tiled_double
 
 verilate_benchmark_16:
 	$(call _bench_run,16,)
@@ -139,4 +140,19 @@ verilate_benchmark_8:
 
 # Default: 16×16 (full hardware match).
 verilate_benchmark: verilate_benchmark_16
+
+# Double-buffering A/B comparison: both targets split the 16×16 physical
+# array into 2x2x2 = 8 software tiles of 8x8x8 (so there is more than one
+# tile to pipeline) and differ only in whether matrix_buffer_ab/c's second
+# bank is used to overlap the next tile's APB load / previous tile's APB
+# read-back with the current tile's compute. Run both and compare the
+# printed "compute"/"bus" cycle counts and the wall-clock speedup to see the
+# effect of double buffering in isolation from tiling itself.
+TILED_CFLAGS = -DACCEL_TILE_M_CAP=8 -DACCEL_TILE_N_CAP=8 -DACCEL_TILE_K_CAP=8
+
+verilate_benchmark_tiled_single:
+	$(call _bench_run,16,$(TILED_CFLAGS) -DBENCH_USE_DOUBLE_BUFFER=0)
+
+verilate_benchmark_tiled_double:
+	$(call _bench_run,16,$(TILED_CFLAGS) -DBENCH_USE_DOUBLE_BUFFER=1)
 

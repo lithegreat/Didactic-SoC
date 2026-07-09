@@ -35,7 +35,7 @@ static void flush_packed_tail(volatile uint32_t *dst, uint32_t *word, uint32_t *
 }
 #endif /* ACCEL_ELEMS_PER_WORD != 4 */
 
-static void write_a_tile(const accel_tile_t *tile) {
+void write_a_tile(const accel_tile_t *tile) {
 #if ACCEL_ELEMS_PER_WORD == 4
   /* INT8 fast path: pointer walk, 4 elements packed per store, no per-element branch. */
   const int8_t   *pa       = &accel_A[tile->m0 * ACC_K + tile->k0];
@@ -64,7 +64,7 @@ static void write_a_tile(const accel_tile_t *tile) {
 #endif
 }
 
-static void write_b_tile(const accel_tile_t *tile) {
+void write_b_tile(const accel_tile_t *tile) {
 #if ACCEL_ELEMS_PER_WORD == 4
   /* INT8 fast path: pointer walk, 4 elements packed per store, no per-element branch. */
   const int8_t   *pb       = &accel_B[tile->k0 * ACC_N + tile->n0];
@@ -93,7 +93,7 @@ static void write_b_tile(const accel_tile_t *tile) {
 #endif
 }
 
-static int wait_done(void) {
+int wait_done(void) {
   uint32_t timeout = 1000000u;
   while (((REG_STATUS & STATUS_DONE_BIT) == 0u) && (timeout != 0u)) {
     timeout--;
@@ -134,13 +134,19 @@ accel_tile_status_t accel_run_tile(
   }
 
   {
-    /* Pointer walk + direct assignment: TILE_K_CAP == ACC_K guarantees one k-pass per
-     * output block, so += is never needed (no k-split accumulation). */
+    /* Accumulate rather than overwrite: when the caller tiles the K dimension
+     * (ACCEL_TILE_K_CAP < ACC_K), the same (m0,n0) output block is visited
+     * once per k-tile and each hardware run only covers a K sub-range, so
+     * partial sums must be added together. The caller is responsible for
+     * zeroing accum once before the first tile (accel_run_tiled_gemm does
+     * this), so this is equivalent to a plain overwrite when there is only
+     * one k-tile. */
     volatile uint32_t *p_row = &accum[tile->m0 * ACC_N + tile->n0];
     for (uint32_t i = 0; i < tile->m; i++) {
       volatile uint32_t *p = p_row;
       for (uint32_t j = 0; j < tile->n; j++) {
-        *p++ = MAT_C_DATA;
+        *p = *p + MAT_C_DATA;
+        p++;
       }
       p_row += ACC_N;
     }

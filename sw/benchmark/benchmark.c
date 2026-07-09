@@ -101,6 +101,16 @@ static volatile uint32_t accum[ACC_M * ACC_N];
  * ------------------------------------------------------------------------- */
 extern void bench_cpu_gemm(volatile int32_t *out);
 
+/* Set via -DBENCH_USE_DOUBLE_BUFFER=1 to pipeline tiles across the matrix
+ * buffers' two banks instead of running them sequentially (bank 0 only).
+ * Combine with -DACCEL_TILE_M_CAP=/-DACCEL_TILE_N_CAP=/-DACCEL_TILE_K_CAP=
+ * (accel_tiled_gemm.c) to create more than one tile so the pipelining has
+ * something to overlap — see the verilate_benchmark_tiled_* Makefile
+ * targets. */
+#ifndef BENCH_USE_DOUBLE_BUFFER
+#define BENCH_USE_DOUBLE_BUFFER 0
+#endif
+
 /* -------------------------------------------------------------------------
  * main
  * ------------------------------------------------------------------------- */
@@ -138,7 +148,8 @@ int main(void) {
      * PATH B — Accelerator GEMM (hardware perf counters)                 *
      * ------------------------------------------------------------------ */
     accel_perf_t accel_perf;
-    accel_tile_status_t st = accel_run_tiled_gemm(accum, &accel_perf);
+    accel_tile_status_t st =
+        accel_run_tiled_gemm(accum, &accel_perf, BENCH_USE_DOUBLE_BUFFER);
 
     if (st == ACCEL_TILE_TIMEOUT) {
         uart_print("benchmark: TIMEOUT\n");
@@ -167,6 +178,8 @@ int main(void) {
     uint32_t compute_cyc = accel_perf.compute_cycles;
     uint32_t bus_cyc     = (accel_perf.apb_writes + accel_perf.apb_reads) * 2u;
 
+    uart_print("mode:    ");
+    uart_print(BENCH_USE_DOUBLE_BUFFER ? "double-buffered\n" : "single-buffered\n");
     uart_print("compute: ");
     print_u32(compute_cyc, " cyc  (REG_PERF_CYCLES, accel)\n");
     uart_print("bus:     ");

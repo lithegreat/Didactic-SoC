@@ -50,4 +50,13 @@
 #define HW_STATUS_OUT_STALL_SEEN_BIT (1u << 2)
 #define HW_STATUS_COUNTER_OVERFLOW_BIT (1u << 3)
 
+// matrix_buffer_ab MAT_AB_CTRL double-buffering bits (docs/interface/matrix_buffer_a_b_if.md).
+#define MAT_AB_CTRL_APB_BANK_BIT (1u << 3)  /* APB write bank select */
+#define MAT_AB_CTRL_SYS_BANK_BIT (1u << 4)  /* streaming-read bank select */
+#define MAT_AB_CTRL_REUSE_B_BIT (1u << 5)   /* reuse-B flag (selected bank) */
+
+// matrix_buffer_c MAT_C_CTRL double-buffering bits (docs/interface/matrix_buffer_c_if.md).
+#define MAT_C_CTRL_APB_BANK_BIT (1u << 3)   /* APB read bank select */
+#define MAT_C_CTRL_CAP_BANK_BIT (1u << 4)   /* capture bank select */
+
 #endif // __ACCEL_REGS_H__

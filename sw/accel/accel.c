@@ -101,9 +101,12 @@ int main(void) {
 #endif
 
   volatile uint32_t accum[ACC_M * ACC_N];
-  accel_clear_accum(accum);
 
-  accel_tile_status_t status = accel_run_tiled_gemm(accum);
+#ifndef ACCEL_USE_DOUBLE_BUFFER
+#define ACCEL_USE_DOUBLE_BUFFER 0
+#endif
+  accel_tile_status_t status =
+      accel_run_tiled_gemm(accum, (void *)0, ACCEL_USE_DOUBLE_BUFFER);
   if (status == ACCEL_TILE_TIMEOUT) {
     uart_print("accel: TIMEOUT waiting for tile\n");
     accel_result = 0xBADD0001u;

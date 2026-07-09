@@ -43,4 +43,12 @@ accel_tile_status_t accel_run_tile(
     volatile uint32_t accum[ACC_M * ACC_N],
     accel_perf_t *perf);
 
+/* Exposed for the pipelined (double-buffered) tiled-GEMM path in
+ * accel_tiled_gemm.c, which needs to overlap the A/B load of the next tile
+ * with the compute of the current one instead of calling accel_run_tile()
+ * (which loads, runs, and waits for a single tile back-to-back). */
+void write_a_tile(const accel_tile_t *tile);
+void write_b_tile(const accel_tile_t *tile);
+int wait_done(void);
+
 #endif // __ACCEL_DRIVER_H__
